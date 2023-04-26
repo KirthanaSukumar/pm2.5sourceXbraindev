@@ -80,15 +80,11 @@ findings_mask = findings1 * findings2 * findings3 * findings4
 imaging_mask = smri_mask * rsfmri_mask * findings_mask
 
 rsfmri_cols = df.filter(regex='rsfmri').columns
-other_cols = set(df.columns) - set(rsfmri_cols)
 
 # mask mri data
 rsfmri_pass_subj = df[rsfmri_cols].mask(imaging_mask).dropna().index
 rsfmri_quality = df.loc[rsfmri_pass_subj]
 
-other = df[other_cols]
-
-complete_cases = df[model_vars].dropna(how='any').index
 
 # I want to compare
 # 1. the full dataset (i.e., regardless of missingness, quality, etc.)
