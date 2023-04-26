@@ -68,7 +68,8 @@ variables = {
         "ehi_y_ss_scoreb" # MS
     ],
     "abcd_lt01": [
-        "site_id_l"
+        "site_id_l",
+        "interview_date"
     ],
     "abcd_drsip101": [
         "dmri_rsi_meanmotion",
@@ -213,7 +214,6 @@ variables = {
     ],
     "abcd_mri01": [
         "mri_info_manufacturer", # MS
-        "interview_date"
     ],
     "abcd_imgincl01": [
         "imgincl_t1w_include", 
@@ -225,7 +225,9 @@ variables = {
     "abcd_rhds01": [
         "reshist_addr1_proxrd", # MS
         "reshist_addr1_popdensity", # MS
-        "reshist_addr1_urban_area" # MS
+        "reshist_addr1_urban_area", # MS
+        "reshist_addr1_pm25",
+        "reshist_addr1_valid"
     ],
     "abcd_sscep01": [
         "nsc_p_ss_mean_3_items" # MS
@@ -259,6 +261,7 @@ missing = {}
 df = pd.DataFrame()
 data_dict = pd.DataFrame(columns=['data_structure', 'variable_description'])
 for structure in variables.keys():
+        
     missing[structure] = []
     old_columns = len(df.columns)
     path = join(DATA_DIR, 'csv', f'{structure}.csv')
@@ -284,13 +287,21 @@ for structure in variables.keys():
                     temp1 = pd.concat([temp1, temp2], axis=0)
                 temp_df = temp1
             else:
-                temp_df = pd.read_csv(path, 
+                temp_df0 = pd.read_csv(path, 
                               index_col="subjectkey", 
                               header=0, 
                               skiprows=[1], 
                               usecols= index + cols)
-                temp_df = temp_df[temp_df['eventname'] == timepoints[0]]
-                    
+                temp_df = temp_df0[temp_df0['eventname'] == timepoints[0]]
+                if structure in ["abcd_mrfindings02", "abcd_imgincl01", "abcd_drsip101", "abcd_lt01"]:
+                    for variable in variables[structure]:
+                        if variable in ["interview_date", "imgincl_t1w_include", "imgincl_dmri_include", "mrif_score", "dmri_rsi_meanmotion"]:
+                            temp_col = temp_df0[temp_df0['eventname'] == "2_year_follow_up_y_arm_1"][variable]
+                            temp_col.name = f'{variable}2'
+                            temp_df = pd.concat([temp_df, temp_col], axis=1)
+                        else:
+                            pass
+                
             df = pd.concat([df, temp_df], axis=1)
             for variable in variables[structure]:
                 try:
@@ -324,7 +335,6 @@ for structure in variables.keys():
             df = pd.concat([df, temp_df], axis=1)
         if change_scores:
             if structure in changes:
-                print()
                 path = join(DATA_DIR, 'change_scores', f'{structure}_changescores_bl_tp2.csv')
                 change_cols = [f'{col}.change_score' for col in cols]
                 index = ["subjectkey"]
