@@ -18,7 +18,14 @@ else:
     pass
 
 df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data.csv"), index_col=0, header=0)
-all_subj = df.index
+
+df['interview_date'] = pd.to_datetime(df['interview_date'])
+df['interview_date2'] = pd.to_datetime(df['interview_date2'])
+# QC filtering - censoring all ppts whose 2-year follow-up visit was after covid
+# bc a global pandemic is a pretty serious confounder LOL
+before_covid = df[df['interview_date2'] < '2020-3-1'].index
+# also calculating demographics, etc. for all those with a valid address
+valid_address = df[df['reshist_addr1_valid'] == 1].index
 
 model_vars = [
     "mri_info_manufacturer",
@@ -34,10 +41,18 @@ model_vars = [
     "ehi_y_ss_scoreb",
     "site_id_l",
     "interview_date",
+    'reshist_addr1_valid',
     "reshist_addr1_proxrd",
     "reshist_addr1_popdensity",
     "reshist_addr1_urban_area",
-    "nsc_p_ss_mean_3_items"
+    "nsc_p_ss_mean_3_items",
+    "reshist_addr1_pm25",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6"
     ]
 
 mri_vars = list(df.filter(regex=".*_rsir.*.change_score", axis=1).columns)
@@ -76,14 +91,11 @@ findings_mask = findings1 * findings2 * findings3 * findings4
 imaging_mask = smri_mask * dmri_mask * findings_mask
 
 dmri_cols = df.filter(regex='dmri').columns
-other_cols = set(df.columns) - set(dmri_cols)
 
 # mask mri data
 # Replace values where the condition is True.
 dmri_pass_subj = df[dmri_cols].mask(imaging_mask).dropna().index
 dmri_quality = df.loc[dmri_pass_subj]
-
-other = df[other_cols]
 
 temp_df = df.loc[dmri_pass_subj][model_vars]
 complete_cases = temp_df.dropna(how='any', axis=0).index
@@ -97,36 +109,10 @@ complete_df = df.loc[complete_cases]
 # 3. complete case data
 
 
-quality_df = pd.concat([other, dmri_quality], axis=1)
+quality_df = dmri_quality[dmri_quality['interview_date2'] < '2020-3-1']
 
 quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd.csv"))
 
-demographics = ["demo_prnt_marital_v2",
-                "demo_prnt_ed_v2",
-                "demo_comb_income_v2",
-                "race_ethnicity",
-                "site_id_l",
-                "sex", 
-                "mri_info_manufacturer"
-               ]
-
-mri_qc = [
-    "imgincl_dmri_include",# baseline
-    "imgincl_t1w_include",# baseline
-    "mrif_score",# baseline
-    "dmri_rsi_meanmotion", # baseline
-    "imgincl_dmri_include2", # year 2 follow-up
-    "imgincl_t1w_include2",# year 2 follow-up
-    "mrif_score2",# year 2 follow-up
-    "dmri_rsi_meanmotion", # year 2 follow-up
-    "interview_age", # baseline
-    "interview_date" # baseline
-]
-
-
-demo_and_qc = demographics + mri_qc
-
-demo_df = df[demo_and_qc]
 
 #qc_df = pd.read_csv(join(PROJ_DIR, DATA_DIR, 'data_qcd.csv'), 
 #                 header=0, 
@@ -134,9 +120,18 @@ demo_df = df[demo_and_qc]
 #qc_ppts = qc_df.dropna(how='all').index
 #qc_df = None
 
-total_N = len(demo_df.index)
+pre_covid_df = df.loc[before_covid]
+pre_covid_good_address = pre_covid_df[pre_covid_df['reshist_addr1_valid'] == 1]
+dmri_good = df.loc[dmri_pass_subj]
+dmri_good = dmri_good[dmri_good['interview_date2'] < '2020-3-1']
 
-dmri_quality = demo_df.loc[dmri_pass_subj]
+col_to_df = {
+    'whole_sample': df, 
+    'pre_covid': pre_covid_df,
+    'with_address': pre_covid_good_address,
+    'with_dmri': dmri_good,
+    'complete_cases': quality_df.dropna(how='any')
+}
 
 table = pd.DataFrame(index=['N', 
                             'Age_mean_base',
@@ -150,6 +145,7 @@ table = pd.DataFrame(index=['N',
                             'RE_Hispanic',
                             'RE_AsianOther',
                             'RE_Missing',
+                            'RE_Refuse',
                             'Income_gt100k', 
                             'Income_50to100k', 
                             'Income_lt50k',
@@ -171,230 +167,112 @@ table = pd.DataFrame(index=['N',
                             'MRI_Siemens', 
                             'MRI_GE', 
                             'MRI_Philips',
-                            'MRI_Missing'], 
-                     columns=['whole_sample', 'with_dmri', 'complete_case'])
+                            'MRI_Missing',
+                            "F1_mean",
+                            "F1_sdev",
+                            "F2_mean",
+                            "F2_sdev",
+                            "F3_mean",
+                            "F3_sdev",
+                            "F4_mean",
+                            "F4_sdev",
+                            "F5_mean",
+                            "F5_sdev",
+                            "F6_mean",
+                            "F6_sdev",
+                            "PM2.5_mean",
+                            "PM2.5_sdev",], 
+                     columns=list(col_to_df.keys()))
 
-table.at['N', 'whole_sample'] = len(all_subj)
-table.at['N', 'with_dmri'] = len(dmri_pass_subj)
-table.at['N', 'complete_case'] = len(complete_cases)
+for subset in col_to_df.keys():
+    #print(subset, type(col_to_df[subset]))
+    temp_df = col_to_df[subset]
+    table.at['N', subset] = len(temp_df.index)
+    table.at['Age_mean_base', subset] = np.mean(temp_df['interview_age'])
+    table.at['Age_sdev_base', subset] = np.std(temp_df['interview_age'])
+    # PM2.5 factors
+    table.at['F1_mean', subset] = np.mean(temp_df['F1'])
+    table.at['F1_sdev', subset] = np.std(temp_df['F1'])
 
-table.at['Age_mean_base', 'whole_sample'] = np.mean(df['interview_age'])
-table.at['Age_mean_base', 'with_dmri'] = np.mean(df.loc[dmri_pass_subj]['interview_age'])
-table.at['Age_mean_base', 'complete_case'] = np.mean(df.loc[complete_cases]['interview_age'])
+    table.at['F2_mean', subset] = np.mean(temp_df['F2'])
+    table.at['F2_sdev', subset] = np.std(temp_df['F2'])
 
-table.at['Age_Missing', 'whole_sample'] = df['interview_age'].isna().sum()
-table.at['Age_Missing', 'with_dmri'] = df.loc[dmri_pass_subj]['interview_age'].isna().sum()
-table.at['Age_Missing', 'complete_case'] = df.loc[complete_cases]['interview_age'].isna().sum()
+    table.at['F3_mean', subset] = np.mean(temp_df['F3'])
+    table.at['F3_sdev', subset] = np.std(temp_df['F3'])
 
-table.at['Age_sdev_base', 'whole_sample'] = np.std(demo_df['interview_age'])
-table.at['Age_sdev_base', 'with_dmri'] = np.std(dmri_quality['interview_age'])
-table.at['Age_sdev_base', 'complete_case'] = np.std(complete_df['interview_age'])
+    table.at['F4_mean', subset] = np.mean(temp_df['F4'])
+    table.at['F4_sdev', subset] = np.std(temp_df['F4'])
 
-table.at['Sex_M', 'whole_sample'] = len(demo_df[demo_df['sex'] == 'M'].index)
-table.at['Sex_M', 'with_dmri'] = len(dmri_quality[dmri_quality['sex'] == 'M'].index)
-table.at['Sex_M', 'complete_case'] = len(complete_df[complete_df['sex'] == 'M'].index)
+    table.at['F5_mean', subset] = np.mean(temp_df['F5'])
+    table.at['F5_sdev', subset] = np.std(temp_df['F5'])
 
-table.at['Sex_F', 'whole_sample'] = len(demo_df[demo_df['sex'] == 'F'].index)
-table.at['Sex_F', 'with_dmri'] = len(dmri_quality[dmri_quality['sex'] == 'F'].index)
-table.at['Sex_F', 'complete_case'] = len(complete_df[complete_df['sex'] == 'F'].index)
+    table.at['F6_mean', subset] = np.mean(temp_df['F6'])
+    table.at['F6_sdev', subset] = np.std(temp_df['F6'])
 
-table.at['Sex_Missing', 'whole_sample'] = demo_df['sex'].isna().sum()
-table.at['Sex_Missing', 'with_dmri'] = dmri_quality['sex'].isna().sum()
-table.at['Sex_Missing', 'complete_case'] = complete_df['sex'].isna().sum()
+    table.at['PM2.5_mean', subset] = np.mean(temp_df['reshist_addr1_pm25'])
+    table.at['PM2.5_sdev', subset] = np.std(temp_df['reshist_addr1_pm25'])
 
+    # demographics
+    table.at['Age_Missing', subset] = temp_df['interview_age'].isna().sum()
+    table.at['Sex_M', subset] = len(temp_df[temp_df['sex'] == 'M'].index)
+    table.at['Sex_F', subset] = len(temp_df[temp_df['sex'] == 'F'].index)
+    table.at['Sex_Missing', subset] = temp_df['sex'].isna().sum()
+    table.at['RE_White',
+             subset] = len(temp_df[temp_df['race_ethnicity'] == 1.].index)
+    table.at['RE_Black',
+             subset] = len(temp_df[temp_df['race_ethnicity'] == 2.].index)
+    table.at['RE_Hispanic',
+             subset] = len(temp_df[temp_df['race_ethnicity'] == 3.].index)
+    table.at['RE_AsianOther',
+             subset] = len(temp_df[temp_df['race_ethnicity'].between(4.,5.,inclusive='both')].index)
+    table.at['RE_Refuse',
+             subset] = len(temp_df[temp_df['race_ethnicity'] == 777.].index)
+    table.at['RE_Missing',
+             subset] = temp_df['race_ethnicity'].isna().sum() + len(temp_df[temp_df['race_ethnicity'] == 999.].index)
+    table.at['Income_gt100k', 
+         subset] = len(temp_df[temp_df['demo_comb_income_v2'].between(9.,10., inclusive='both')].index)
+    table.at['Income_50to100k', 
+         subset] = len(temp_df[temp_df['demo_comb_income_v2'].between(7., 8., inclusive='both')].index)
+    table.at['Income_lt50k', 
+         subset] = len(temp_df[temp_df['demo_comb_income_v2'] <= 6.].index)
+    table.at['Income_dkrefuse', 
+            subset] = len(temp_df[temp_df['demo_comb_income_v2'] == 777.].index)
+    table.at['Income_Missing', 
+            subset] = len(temp_df[temp_df['demo_comb_income_v2'] == 999.].index) + temp_df['demo_comb_income_v2'].isna().sum()
+    table.at['MRI_Siemens', 
+            subset] = len(temp_df[temp_df['mri_info_manufacturer'] == "SIEMENS"].index)
+    table.at['MRI_GE', 
+            subset] = len(temp_df[temp_df['mri_info_manufacturer'] == "GE MEDICAL SYSTEMS"].index)
+    table.at['MRI_Philips', 
+            subset] = len(temp_df[temp_df['mri_info_manufacturer'] == "Philips Medical Systems"].index)
+    table.at['MRI_Missing', 
+            subset] = len(temp_df[temp_df['mri_info_manufacturer'].isna()].index)
+    table.at['Marital_Married', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 1.])
+    table.at['Marital_Widowed', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 2.])
+    table.at['Marital_Divorced', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 3.])
+    table.at['Marital_Separated', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 4.])
+    table.at['Marital_Never', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 5.])
+    table.at['Marital_Refused', 
+            subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 777.])
+    table.at['Marital_Missing', 
+            subset] = temp_df["demo_prnt_marital_v2"].isna().sum() + len(temp_df[temp_df["demo_prnt_marital_v2"] == 999.])
+    table.at['Education_uptoHSGED', 
+            subset] = len(temp_df[temp_df['demo_prnt_ed_v2'].between(0,14,inclusive='both')])
+    table.at['Education_SomeColAA', 
+            subset] = len(temp_df[temp_df['demo_prnt_ed_v2'].between(15,17, inclusive='both')])
+    table.at['Education_Bachelors', 
+            subset] = len(temp_df[temp_df['demo_prnt_ed_v2'] == 18])
+    table.at['Education_Graduate', 
+            subset] = len(temp_df[temp_df['demo_prnt_ed_v2'].between(19,22, inclusive='both')])
+    table.at['Education_Refused', 
+            subset] = len(temp_df[temp_df['demo_prnt_ed_v2'] == 777.])
+    table.at['Education_Missing', 
+            subset] = temp_df['demo_prnt_ed_v2'].isna().sum() + len(temp_df[temp_df['demo_prnt_ed_v2'] == 999.])
 
-table.at['RE_White', 
-         'whole_sample'] = len(demo_df[demo_df['race_ethnicity'] == 1.].index)
-table.at['RE_White', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['race_ethnicity'] == 1.].index)
-table.at['RE_White', 
-         'complete_case'] = len(complete_df[complete_df['race_ethnicity'] == 1.].index)
-
-table.at['RE_Missing', 
-         'whole_sample'] = demo_df['race_ethnicity'].isna().sum()
-table.at['RE_Missing', 
-         'with_dmri'] = dmri_quality['race_ethnicity'].isna().sum()
-table.at['RE_Missing', 
-         'complete_case'] = complete_df['race_ethnicity'].isna().sum()
-
-table.at['RE_Black', 
-         'whole_sample'] = len(demo_df[demo_df['race_ethnicity'] == 2.].index)
-table.at['RE_Black', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['race_ethnicity'] == 2.].index)
-table.at['RE_Black', 
-         'complete_case'] = len(complete_df[complete_df['race_ethnicity'] == 2.].index)
-
-table.at['RE_Hispanic', 
-         'whole_sample'] = len(demo_df[demo_df['race_ethnicity'] == 3.].index)
-table.at['RE_Hispanic', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['race_ethnicity'] == 3.].index)
-table.at['RE_Hispanic', 
-         'complete_case'] = len(complete_df[complete_df['race_ethnicity'] == 3.].index)
-
-table.at['RE_AsianOther', 
-         'whole_sample'] = len(demo_df[demo_df['race_ethnicity'].between(4.,5.,inclusive='both')].index)
-table.at['RE_AsianOther', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['race_ethnicity'].between(4.,5.,inclusive='both')].index)
-table.at['RE_AsianOther', 
-         'complete_case'] = len(complete_df[complete_df['race_ethnicity'].between(4.,5.,inclusive='both')].index)
-
-
-table.at['Income_gt100k', 
-         'whole_sample'] = len(demo_df[demo_df['demo_comb_income_v2'].between(9.,10., inclusive='both')].index)
-table.at['Income_gt100k', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_comb_income_v2'].between(9.,10., inclusive='both')].index)
-table.at['Income_gt100k', 
-         'complete_case'] = len(complete_df[complete_df['demo_comb_income_v2'].between(9.,10., inclusive='both')].index)
-
-table.at['Income_Missing', 
-         'whole_sample'] = demo_df['demo_comb_income_v2'].between(9.,10., inclusive='both').isna().sum()
-table.at['Income_Missing', 
-         'with_dmri'] = dmri_quality['demo_comb_income_v2'].between(9.,10., inclusive='both').isna().sum()
-table.at['Income_Missing', 
-         'complete_case'] = complete_df['demo_comb_income_v2'].between(9.,10., inclusive='both').isna().sum()
-
-table.at['Income_50to100k', 
-         'whole_sample'] = len(demo_df[demo_df['demo_comb_income_v2'].between(7., 8., inclusive='both')].index)
-
-table.at['Income_lt50k', 
-         'whole_sample'] = len(demo_df[demo_df['demo_comb_income_v2'] <= 6.].index)
-
-table.at['Income_dkrefuse', 
-         'whole_sample'] = len(demo_df[demo_df['demo_comb_income_v2'] >= 777.].index)
-
-table.at['MRI_Siemens', 
-         'whole_sample'] = len(demo_df[demo_df['mri_info_manufacturer'] == "SIEMENS"].index)
-table.at['MRI_GE', 
-         'whole_sample'] = len(demo_df[demo_df['mri_info_manufacturer'] == "GE MEDICAL SYSTEMS"].index)
-table.at['MRI_Philips', 
-         'whole_sample'] = len(demo_df[demo_df['mri_info_manufacturer'] == "Philips Medical Systems"].index)
-
-table.at['Marital_Married', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 1.])
-table.at['Marital_Widowed', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 2.])
-table.at['Marital_Divorced', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 3.])
-table.at['Marital_Separated', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 4.])
-table.at['Marital_Never', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 5.])
-table.at['Marital_Refused', 
-         'whole_sample'] = len(demo_df[demo_df["demo_prnt_marital_v2"] == 777.])
-
-table.at['Marital_Missing', 
-         'whole_sample'] = demo_df["demo_prnt_marital_v2"].isna().sum()
-table.at['Marital_Missing', 
-         'with_dmri'] = dmri_quality["demo_prnt_marital_v2"].isna().sum()
-table.at['Marital_Missing', 
-         'complete_case'] = complete_df["demo_prnt_marital_v2"].isna().sum()
-
-table.at['Education_uptoHSGED', 
-         'whole_sample'] = len(demo_df[demo_df['demo_prnt_ed_v2'].between(0,14, 
-                                                                                                inclusive='both')])
-table.at['Education_SomeColAA', 
-         'whole_sample'] = len(demo_df[demo_df['demo_prnt_ed_v2'].between(15,17, 
-                                                                                                inclusive='both')])
-table.at['Education_Bachelors', 
-         'whole_sample'] = len(demo_df[demo_df['demo_prnt_ed_v2'] == 18])
-table.at['Education_Graduate', 
-         'whole_sample'] = len(demo_df[demo_df['demo_prnt_ed_v2'].between(19,22, 
-                                                                                                inclusive='both')])
-table.at['Education_Refused', 
-         'whole_sample'] = len(demo_df[demo_df['demo_prnt_ed_v2'] == 777.]) + len(demo_df[demo_df['demo_prnt_ed_v2'] == 999.])
-
-table.at['Income_50to100k', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_comb_income_v2'].between(7., 8., inclusive='both')].index)
-table.at['Income_50to100k', 
-         'complete_case'] = len(complete_df[complete_df['demo_comb_income_v2'].between(7., 8., inclusive='both')].index)
-
-table.at['Income_lt50k', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_comb_income_v2'] <= 6.].index)
-table.at['Income_lt50k', 
-         'complete_case'] = len(complete_df[complete_df['demo_comb_income_v2'] <= 6.].index)
-
-table.at['Income_dkrefuse', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_comb_income_v2'] >= 777.].index)
-table.at['Income_dkrefuse', 
-         'complete_case'] = len(complete_df[complete_df['demo_comb_income_v2'] >= 777.].index)
-
-table.at['MRI_Siemens', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['mri_info_manufacturer'] == "SIEMENS"].index)
-table.at['MRI_Siemens', 
-         'complete_case'] = len(complete_df[complete_df['mri_info_manufacturer'] == "SIEMENS"].index)
-table.at['MRI_GE', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['mri_info_manufacturer'] == "GE MEDICAL SYSTEMS"].index)
-table.at['MRI_GE', 
-         'complete_case'] = len(complete_df[complete_df['mri_info_manufacturer']  == "GE MEDICAL SYSTEMS"].index)
-table.at['MRI_Philips', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['mri_info_manufacturer'] == "Philips Medical Systems"].index)
-table.at['MRI_Philips', 
-         'complete_case'] = len(complete_df[complete_df['mri_info_manufacturer'] == "Philips Medical Systems"].index)
-
-table.at['MRI_Missing', 
-         'whole_sample'] = demo_df['mri_info_manufacturer'].isna().sum()
-table.at['MRI_Missing', 
-         'with_dmri'] = dmri_quality['mri_info_manufacturer'].isna().sum()
-table.at['MRI_Missing', 
-         'complete_case'] = complete_df['mri_info_manufacturer'].isna().sum()
-
-table.at['Marital_Married', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 1.])
-table.at['Marital_Married', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 1.])
-table.at['Marital_Widowed', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 2.])
-table.at['Marital_Widowed', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 2.])
-table.at['Marital_Divorced', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 3.])
-table.at['Marital_Divorced', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 3.])
-table.at['Marital_Separated', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 4.])
-table.at['Marital_Separated', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 4.])
-table.at['Marital_Never', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 5.])
-table.at['Marital_Never', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 5.])
-table.at['Marital_Refused', 
-         'with_dmri'] = len(dmri_quality[dmri_quality["demo_prnt_marital_v2"] == 777.])
-table.at['Marital_Refused', 
-         'complete_case'] = len(complete_df[complete_df["demo_prnt_marital_v2"] == 777.])
-
-table.at['Education_uptoHSGED', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_prnt_ed_v2'].between(0,14, 
-                                                                                                inclusive='both')])
-table.at['Education_SomeColAA', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_prnt_ed_v2'].between(15,17, 
-                                                                                                inclusive='both')])
-table.at['Education_Bachelors', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_prnt_ed_v2'] == 18])
-table.at['Education_Graduate', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_prnt_ed_v2'].between(19,22, 
-                                                                                                inclusive='both')])
-table.at['Education_uptoHSGED', 
-         'complete_case'] = len(complete_df[complete_df['demo_prnt_ed_v2'].between(0,14, 
-                                                                                                inclusive='both')])
-table.at['Education_SomeColAA', 
-         'complete_case'] = len(complete_df[complete_df['demo_prnt_ed_v2'].between(15,17, 
-                                                                                                inclusive='both')])
-table.at['Education_Bachelors', 
-         'complete_case'] = len(complete_df[complete_df['demo_prnt_ed_v2'] == 18])
-table.at['Education_Graduate', 
-         'complete_case'] = len(complete_df[complete_df['demo_prnt_ed_v2'].between(19,22, 
-                                                                                                inclusive='both')])
-table.at['Education_Refused', 
-         'complete_case'] = len(complete_df[complete_df['demo_prnt_ed_v2'] == 777.]) + len(complete_df[complete_df['demo_prnt_ed_v2'] == 999.])
-table.at['Education_Refused', 
-         'with_dmri'] = len(dmri_quality[dmri_quality['demo_prnt_ed_v2'] == 777.]) + len(dmri_quality[dmri_quality['demo_prnt_ed_v2'] == 999.])
-
-table.at['Education_Missing', 
-         'whole_sample'] = demo_df['demo_prnt_ed_v2'].isna().sum()
-table.at['Education_Missing', 
-         'with_dmri'] = dmri_quality['demo_prnt_ed_v2'].isna().sum()
-table.at['Education_Missing', 
-         'complete_case'] = complete_df['demo_prnt_ed_v2'].isna().sum()
 
 table.to_csv(join(PROJ_DIR, OUTP_DIR, 'demographics.csv'))
