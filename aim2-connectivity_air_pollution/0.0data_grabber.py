@@ -5,6 +5,7 @@ import sys
 import enlighten
 # pandas is a dataframe-managing library and it's the absolute coolest
 import pandas as pd
+import numpy as np
 # os is more system tools, should also already be installed
 # we're importing tools for verifying and manipulating file paths/directories
 from os.path import join, exists, isdir
@@ -68,164 +69,120 @@ variables = {
         "ehi_y_ss_scoreb"
     ],
     "abcd_lt01": [
-        "site_id_l"
+        "site_id_l",
+        "interview_date"
     ],
-    "abcd_drsip101": [
-        "dmri_rsi_meanmotion",
-        "dmri_rsirnigm_cdk_bstslh", 
-        "dmri_rsirnigm_cdk_caclh",
-        "dmri_rsirnigm_cdk_cmflh", 
-        "dmri_rsirnigm_cdk_cnlh", 
-        "dmri_rsirnigm_cdk_erlh", 
-        "dmri_rsirnigm_cdk_fflh", 
-        "dmri_rsirnigm_cdk_iplh", 
-        "dmri_rsirnigm_cdk_itlh", 
-        "dmri_rsirnigm_cdk_iclh", 
-        "dmri_rsirnigm_cdk_lolh", 
-        "dmri_rsirnigm_cdk_loflh", 
-        "dmri_rsirnigm_cdk_lglh", 
-        "dmri_rsirnigm_cdk_moflh", 
-        "dmri_rsirnigm_cdk_mtlh", 
-        "dmri_rsirnigm_cdk_phlh", 
-        "dmri_rsirnigm_cdk_pclh", 
-        "dmri_rsirnigm_cdk_poplh", 
-        "dmri_rsirnigm_cdk_poblh", 
-        "dmri_rsirnigm_cdk_ptglh", 
-        "dmri_rsirnigm_cdk_pcclh", 
-        "dmri_rsirnigm_cdk_pctlh", 
-        "dmri_rsirnigm_cdk_pcglh",
-        "dmri_rsirnigm_cdk_prctlh",
-        "dmri_rsirnigm_cdk_prcnlh",
-        "dmri_rsirnigm_cdk_raclh", 
-        "dmri_rsirnigm_cdk_rmflh", 
-        "dmri_rsirnigm_cdk_sflh", 
-        "dmri_rsirnigm_cdk_splh", 
-        "dmri_rsirnigm_cdk_stlh", 
-        "dmri_rsirnigm_cdk_smlh", 
-        "dmri_rsirnigm_cdk_fplh", 
-        "dmri_rsirnigm_cdk_tplh", 
-        "dmri_rsirnigm_cdk_ttlh", 
-        "dmri_rsirnigm_cdk_islh", 
-        "dmri_rsirnigm_cdk_bstsrh", 
-        "dmri_rsirnigm_cdk_cacrh", 
-        "dmri_rsirnigm_cdk_cmfrh", 
-        "dmri_rsirnigm_cdk_cnrh", 
-        "dmri_rsirnigm_cdk_errh", 
-        "dmri_rsirnigm_cdk_ffrh", 
-        "dmri_rsirnigm_cdk_iprh", 
-        "dmri_rsirnigm_cdk_itrh", 
-        "dmri_rsirnigm_cdk_icrh", 
-        "dmri_rsirnigm_cdk_lorh", 
-        "dmri_rsirnigm_cdk_lofrh", 
-        "dmri_rsirnigm_cdk_lgrh", 
-        "dmri_rsirnigm_cdk_mofrh", 
-        "dmri_rsirnigm_cdk_mtrh", 
-        "dmri_rsirnigm_cdk_phrh", 
-        "dmri_rsirnigm_cdk_pcrh", 
-        "dmri_rsirnigm_cdk_poprh", 
-        "dmri_rsirnigm_cdk_pobrh", 
-        "dmri_rsirnigm_cdk_ptgrh",
-        "dmri_rsirnigm_cdk_pccrh", 
-        "dmri_rsirnigm_cdk_pctrh", 
-        "dmri_rsirnigm_cdk_pcgrh", 
-        "dmri_rsirnigm_cdk_prctrh", 
-        "dmri_rsirnigm_cdk_prcnrh", 
-        "dmri_rsirnigm_cdk_racrh", 
-        "dmri_rsirnigm_cdk_rmfrh", 
-        "dmri_rsirnigm_cdk_sfrh", 
-        "dmri_rsirnigm_cdk_sprh",
-        "dmri_rsirnigm_cdk_strh", 
-        "dmri_rsirnigm_cdk_smrh", 
-        "dmri_rsirnigm_cdk_fprh", 
-        "dmri_rsirnigm_cdk_tprh", 
-        "dmri_rsirnigm_cdk_ttrh", 
-        "dmri_rsirnigm_cdk_isrh"
-    ],
-    "abcd_drsip201": [
-        "dmri_rsirndgm_cdk_bstslh", 
-        "dmri_rsirndgm_cdk_caclh",
-        "dmri_rsirndgm_cdk_cmflh", 
-        "dmri_rsirndgm_cdk_cnlh", 
-        "dmri_rsirndgm_cdk_erlh", 
-        "dmri_rsirndgm_cdk_fflh", 
-        "dmri_rsirndgm_cdk_iplh", 
-        "dmri_rsirndgm_cdk_itlh", 
-        "dmri_rsirndgm_cdk_iclh", 
-        "dmri_rsirndgm_cdk_lolh", 
-        "dmri_rsirndgm_cdk_loflh", 
-        "dmri_rsirndgm_cdk_lglh", 
-        "dmri_rsirndgm_cdk_moflh", 
-        "dmri_rsirndgm_cdk_mtlh", 
-        "dmri_rsirndgm_cdk_phlh", 
-        "dmri_rsirndgm_cdk_pclh", 
-        "dmri_rsirndgm_cdk_poplh", 
-        "dmri_rsirndgm_cdk_poblh", 
-        "dmri_rsirndgm_cdk_ptglh", 
-        "dmri_rsirndgm_cdk_pcclh", 
-        "dmri_rsirndgm_cdk_pctlh", 
-        "dmri_rsirndgm_cdk_pcglh",
-        "dmri_rsirndgm_cdk_prctlh",
-        "dmri_rsirndgm_cdk_prcnlh",
-        "dmri_rsirndgm_cdk_raclh", 
-        "dmri_rsirndgm_cdk_rmflh", 
-        "dmri_rsirndgm_cdk_sflh", 
-        "dmri_rsirndgm_cdk_splh", 
-        "dmri_rsirndgm_cdk_stlh", 
-        "dmri_rsirndgm_cdk_smlh", 
-        "dmri_rsirndgm_cdk_fplh", 
-        "dmri_rsirndgm_cdk_tplh", 
-        "dmri_rsirndgm_cdk_ttlh", 
-        "dmri_rsirndgm_cdk_islh", 
-        "dmri_rsirndgm_cdk_bstsrh", 
-        "dmri_rsirndgm_cdk_cacrh", 
-        "dmri_rsirndgm_cdk_cmfrh", 
-        "dmri_rsirndgm_cdk_cnrh", 
-        "dmri_rsirndgm_cdk_errh", 
-        "dmri_rsirndgm_cdk_ffrh", 
-        "dmri_rsirndgm_cdk_iprh", 
-        "dmri_rsirndgm_cdk_itrh", 
-        "dmri_rsirndgm_cdk_icrh", 
-        "dmri_rsirndgm_cdk_lorh", 
-        "dmri_rsirndgm_cdk_lofrh", 
-        "dmri_rsirndgm_cdk_lgrh", 
-        "dmri_rsirndgm_cdk_mofrh", 
-        "dmri_rsirndgm_cdk_mtrh", 
-        "dmri_rsirndgm_cdk_phrh", 
-        "dmri_rsirndgm_cdk_pcrh", 
-        "dmri_rsirndgm_cdk_poprh", 
-        "dmri_rsirndgm_cdk_pobrh", 
-        "dmri_rsirndgm_cdk_ptgrh",
-        "dmri_rsirndgm_cdk_pccrh", 
-        "dmri_rsirndgm_cdk_pctrh", 
-        "dmri_rsirndgm_cdk_pcgrh", 
-        "dmri_rsirndgm_cdk_prctrh", 
-        "dmri_rsirndgm_cdk_prcnrh", 
-        "dmri_rsirndgm_cdk_racrh", 
-        "dmri_rsirndgm_cdk_rmfrh", 
-        "dmri_rsirndgm_cdk_sfrh", 
-        "dmri_rsirndgm_cdk_sprh",
-        "dmri_rsirndgm_cdk_strh", 
-        "dmri_rsirndgm_cdk_smrh", 
-        "dmri_rsirndgm_cdk_fprh", 
-        "dmri_rsirndgm_cdk_tprh", 
-        "dmri_rsirndgm_cdk_ttrh", 
-        "dmri_rsirndgm_cdk_isrh"
+    "abcd_betnet02": [
+        "rsfmri_c_ngd_ntpoints",
+        "rsfmri_c_ngd_ad_ngd_ad",
+        "rsfmri_c_ngd_ad_ngd_cgc",
+        "rsfmri_c_ngd_ad_ngd_ca",
+        "rsfmri_c_ngd_ad_ngd_dt",
+        "rsfmri_c_ngd_ad_ngd_dla",
+        "rsfmri_c_ngd_ad_ngd_fo",
+        "rsfmri_c_ngd_ad_ngd_n",
+        "rsfmri_c_ngd_ad_ngd_rspltp",
+        "rsfmri_c_ngd_ad_ngd_smh",
+        "rsfmri_c_ngd_ad_ngd_smm",
+        "rsfmri_c_ngd_ad_ngd_sa",
+        "rsfmri_c_ngd_ad_ngd_vta",
+        "rsfmri_c_ngd_ad_ngd_vs",
+        "rsfmri_c_ngd_cgc_ngd_cgc",
+        "rsfmri_c_ngd_cgc_ngd_ca",
+        "rsfmri_c_ngd_cgc_ngd_dt",
+        "rsfmri_c_ngd_cgc_ngd_dla",
+        "rsfmri_c_ngd_cgc_ngd_fo",
+        "rsfmri_c_ngd_cgc_ngd_n",
+        "rsfmri_c_ngd_cgc_ngd_rspltp",
+        "rsfmri_c_ngd_cgc_ngd_smh",
+        "rsfmri_c_ngd_cgc_ngd_smm",
+        "rsfmri_c_ngd_cgc_ngd_sa",
+        "rsfmri_c_ngd_cgc_ngd_vta",
+        "rsfmri_c_ngd_cgc_ngd_vs",
+        "rsfmri_c_ngd_ca_ngd_ca",
+        "rsfmri_c_ngd_ca_ngd_dt",
+        "rsfmri_c_ngd_ca_ngd_dla",
+        "rsfmri_c_ngd_ca_ngd_fo",
+        "rsfmri_c_ngd_ca_ngd_n",
+        "rsfmri_c_ngd_ca_ngd_rspltp",
+        "rsfmri_c_ngd_ca_ngd_smh",
+        "rsfmri_c_ngd_ca_ngd_smm",
+        "rsfmri_c_ngd_ca_ngd_sa",
+        "rsfmri_c_ngd_ca_ngd_vta",
+        "rsfmri_c_ngd_ca_ngd_vs",
+        "rsfmri_c_ngd_dt_ngd_dt",
+        "rsfmri_c_ngd_dt_ngd_dla",
+        "rsfmri_c_ngd_dt_ngd_fo",
+        "rsfmri_c_ngd_dt_ngd_n",
+        "rsfmri_c_ngd_dt_ngd_rspltp",
+        "rsfmri_c_ngd_dt_ngd_smh",
+        "rsfmri_c_ngd_dt_ngd_smm",
+        "rsfmri_c_ngd_dt_ngd_sa",
+        "rsfmri_c_ngd_dt_ngd_vta",
+        "rsfmri_c_ngd_dt_ngd_vs",
+        "rsfmri_c_ngd_dla_ngd_dla",
+        "rsfmri_c_ngd_dla_ngd_fo",
+        "rsfmri_c_ngd_dla_ngd_n",
+        "rsfmri_c_ngd_dla_ngd_rspltp",
+        "rsfmri_c_ngd_dla_ngd_smh",
+        "rsfmri_c_ngd_dla_ngd_smm",
+        "rsfmri_c_ngd_dla_ngd_sa",
+        "rsfmri_c_ngd_dla_ngd_vta",
+        "rsfmri_c_ngd_dla_ngd_vs",
+        "rsfmri_c_ngd_fo_ngd_fo",
+        "rsfmri_c_ngd_fo_ngd_n",
+        "rsfmri_c_ngd_fo_ngd_rspltp",
+        "rsfmri_c_ngd_fo_ngd_smh",
+        "rsfmri_c_ngd_fo_ngd_smm",
+        "rsfmri_c_ngd_fo_ngd_sa",
+        "rsfmri_c_ngd_fo_ngd_vta",
+        "rsfmri_c_ngd_fo_ngd_vs",
+        "rsfmri_c_ngd_n_ngd_n",
+        "rsfmri_c_ngd_n_ngd_rspltp",
+        "rsfmri_c_ngd_n_ngd_smh",
+        "rsfmri_c_ngd_n_ngd_smm",
+        "rsfmri_c_ngd_n_ngd_sa",
+        "rsfmri_c_ngd_n_ngd_vta",
+        "rsfmri_c_ngd_n_ngd_vs",
+        "rsfmri_c_ngd_rspltp_ngd_rspltp",
+        "rsfmri_c_ngd_rspltp_ngd_smh",
+        "rsfmri_c_ngd_rspltp_ngd_smm",
+        "rsfmri_c_ngd_rspltp_ngd_sa",
+        "rsfmri_c_ngd_rspltp_ngd_vta",
+        "rsfmri_c_ngd_rspltp_ngd_vs",
+        "rsfmri_c_ngd_smh_ngd_smh",
+        "rsfmri_c_ngd_smh_ngd_smm",
+        "rsfmri_c_ngd_smh_ngd_sa",
+        "rsfmri_c_ngd_smh_ngd_vta",
+        "rsfmri_c_ngd_smh_ngd_vs",
+        "rsfmri_c_ngd_smm_ngd_smm",
+        "rsfmri_c_ngd_smm_ngd_sa",
+        "rsfmri_c_ngd_smm_ngd_vta",
+        "rsfmri_c_ngd_smm_ngd_vs",
+        "rsfmri_c_ngd_sa_ngd_sa",
+        "rsfmri_c_ngd_sa_ngd_vta",
+        "rsfmri_c_ngd_sa_ngd_vs",
+        "rsfmri_c_ngd_vta_ngd_vta",
+        "rsfmri_c_ngd_vta_ngd_vs",
+        "rsfmri_c_ngd_vs_ngd_vs",
     ],
     "abcd_mri01": [
         "mri_info_manufacturer",
-        "interview_date"
     ],
     "abcd_imgincl01": [
         "imgincl_t1w_include", 
-        "imgincl_dmri_include"
+        "imgincl_rsfmri_include",
     ],
     "abcd_mrfindings02": [
         "mrif_score"
     ],
     "abcd_rhds01": [
+        "reshist_addr1_valid",
         "reshist_addr1_proxrd",
         "reshist_addr1_popdensity",
-        "reshist_addr1_urban_area"
+        "reshist_addr1_urban_area",
+        "reshist_addr1_pm25",
+        
     ],
     "abcd_sscep01": [
         "nsc_p_ss_mean_3_items"
@@ -233,7 +190,7 @@ variables = {
 }
 
 timepoints = ["baseline_year_1_arm_1"]
-change_scores = True
+change_scores = False
 
 # reads in the data dictionary mapping variables to data structures
 DATA_DICT = pd.read_csv(join(DATA_DIR, 'generate_dataset/data_element_names.csv'), index_col=0)
@@ -259,6 +216,7 @@ missing = {}
 df = pd.DataFrame()
 data_dict = pd.DataFrame(columns=['data_structure', 'variable_description'])
 for structure in variables.keys():
+        
     missing[structure] = []
     old_columns = len(df.columns)
     path = join(DATA_DIR, 'csv', f'{structure}.csv')
@@ -284,13 +242,21 @@ for structure in variables.keys():
                     temp1 = pd.concat([temp1, temp2], axis=0)
                 temp_df = temp1
             else:
-                temp_df = pd.read_csv(path, 
+                temp_df0 = pd.read_csv(path, 
                               index_col="subjectkey", 
                               header=0, 
                               skiprows=[1], 
                               usecols= index + cols)
-                temp_df = temp_df[temp_df['eventname'] == timepoints[0]]
-                    
+                temp_df = temp_df0[temp_df0['eventname'] == timepoints[0]]
+                if structure in ["abcd_mrfindings02", "abcd_imgincl01", "abcd_betnet02", "abcd_lt01"]:
+                    for variable in variables[structure]:
+                        if variable in ["interview_date", "imgincl_t1w_include", "rsfmri_c_ngd_ntpoints", "mrif_score", "imgincl_rsfmri_include"]:
+                            temp_col = temp_df0[temp_df0['eventname'] == "2_year_follow_up_y_arm_1"][variable]
+                            temp_col.name = f'{variable}2'
+                            temp_df = pd.concat([temp_df, temp_col], axis=1)
+                        else:
+                            pass
+                
             df = pd.concat([df, temp_df], axis=1)
             for variable in variables[structure]:
                 try:
@@ -324,7 +290,6 @@ for structure in variables.keys():
             df = pd.concat([df, temp_df], axis=1)
         if change_scores:
             if structure in changes:
-                print()
                 path = join(DATA_DIR, 'change_scores', f'{structure}_changescores_bl_tp2.csv')
                 change_cols = [f'{col}.change_score' for col in cols]
                 index = ["subjectkey"]
@@ -352,6 +317,21 @@ print(f"Full dataframe is {sys.getsizeof(df) / 1000000}MB.")
 df = df.dropna(how="all", axis=0)
 df = df[df['site_id_l'] != 'site22']
 df = df.loc[:,~df.columns.duplicated()].copy()
+
+# let's grab all of the rsFC change scores
+path = join(DATA_DIR, 'change_scores', 'abcd_betnet02_changescores_bl_tp2.csv')
+change_scores = pd.read_csv(path, index_col="subjectkey", header=0)
+
+# need a column for sign at baseline
+for var in variables['abcd_betnet02']:
+    base_change_scores = change_scores[f'{var}.baseline_year_1_arm_1'].copy()
+    y2fu_change_scores = change_scores[f'{var}.2_year_follow_up_y_arm_1'].copy()
+    change_scores[f'{var}.base_sign'] = np.sign(base_change_scores).copy()
+    change_scores[f'{var}.2yfu_sign'] = np.sign(y2fu_change_scores).copy()
+    abs_change = np.abs(y2fu_change_scores)  - np.abs(base_change_scores).copy()
+    change_scores[f'{var}.change_sign'] = np.sign(abs_change).copy()
+
+df = pd.concat([df, change_scores.filter(regex="rsfmri_c_.*", axis=1)], axis=1)
 
 pm_factors = pd.read_excel('/Volumes/projects_herting/LABDOCS/Personnel/Kirthana/Project3_particlePM/PMF tool results/Contribution_F6run10_fpeak.xlsx', 
               skiprows=0, index_col=0, header=1)
