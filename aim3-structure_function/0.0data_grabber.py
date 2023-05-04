@@ -33,12 +33,22 @@ everywhere_vars = ["collection_id",
                    "imgincl_nback_include", 
                    "imgincl_sst_include"]
 
+two_timept_vars = [
+    "interview_date", 
+    "imgincl_t1w_include", 
+    "dmri_rsi_meanmotion", 
+    "imgincl_dmri_include", 
+    "rsfmri_c_ngd_ntpoints", 
+    "mrif_score", 
+    "imgincl_rsfmri_include", 
+    "dmri_rsi_meanmotion"]
+
 changes = ['abcd_smrip10201', 'abcd_smrip20201', 'abcd_smrip30201', 
            'abcd_mrisdp10201', 'abcd_mrisdp20201', 'abcd_dti_p101', 
            'abcd_drsip101', 'abcd_drsip201', 'abcd_mrirsfd01', 
            'abcd_mrirstv02', 'abcd_betnet02', 'mrirscor02', 'abcd_tbss01']
 
-OUT_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim2/data"
+OUT_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim3/data"
 
 # if the folder you want to save your dataset in doesn't exist, this will create it for you
 if not isdir(OUT_DIR):
@@ -71,6 +81,147 @@ variables = {
     "abcd_lt01": [
         "site_id_l",
         "interview_date"
+    ],
+    "abcd_drsip101": [
+        "dmri_rsi_meanmotion",
+        "dmri_rsirnigm_cdk_bstslh", 
+        "dmri_rsirnigm_cdk_caclh",
+        "dmri_rsirnigm_cdk_cmflh", 
+        "dmri_rsirnigm_cdk_cnlh", 
+        "dmri_rsirnigm_cdk_erlh", 
+        "dmri_rsirnigm_cdk_fflh", 
+        "dmri_rsirnigm_cdk_iplh", 
+        "dmri_rsirnigm_cdk_itlh", 
+        "dmri_rsirnigm_cdk_iclh", 
+        "dmri_rsirnigm_cdk_lolh", 
+        "dmri_rsirnigm_cdk_loflh", 
+        "dmri_rsirnigm_cdk_lglh", 
+        "dmri_rsirnigm_cdk_moflh", 
+        "dmri_rsirnigm_cdk_mtlh", 
+        "dmri_rsirnigm_cdk_phlh", 
+        "dmri_rsirnigm_cdk_pclh", 
+        "dmri_rsirnigm_cdk_poplh", 
+        "dmri_rsirnigm_cdk_poblh", 
+        "dmri_rsirnigm_cdk_ptglh", 
+        "dmri_rsirnigm_cdk_pcclh", 
+        "dmri_rsirnigm_cdk_pctlh", 
+        "dmri_rsirnigm_cdk_pcglh",
+        "dmri_rsirnigm_cdk_prctlh",
+        "dmri_rsirnigm_cdk_prcnlh",
+        "dmri_rsirnigm_cdk_raclh", 
+        "dmri_rsirnigm_cdk_rmflh", 
+        "dmri_rsirnigm_cdk_sflh", 
+        "dmri_rsirnigm_cdk_splh", 
+        "dmri_rsirnigm_cdk_stlh", 
+        "dmri_rsirnigm_cdk_smlh", 
+        "dmri_rsirnigm_cdk_fplh", 
+        "dmri_rsirnigm_cdk_tplh", 
+        "dmri_rsirnigm_cdk_ttlh", 
+        "dmri_rsirnigm_cdk_islh", 
+        "dmri_rsirnigm_cdk_bstsrh", 
+        "dmri_rsirnigm_cdk_cacrh", 
+        "dmri_rsirnigm_cdk_cmfrh", 
+        "dmri_rsirnigm_cdk_cnrh", 
+        "dmri_rsirnigm_cdk_errh", 
+        "dmri_rsirnigm_cdk_ffrh", 
+        "dmri_rsirnigm_cdk_iprh", 
+        "dmri_rsirnigm_cdk_itrh", 
+        "dmri_rsirnigm_cdk_icrh", 
+        "dmri_rsirnigm_cdk_lorh", 
+        "dmri_rsirnigm_cdk_lofrh", 
+        "dmri_rsirnigm_cdk_lgrh", 
+        "dmri_rsirnigm_cdk_mofrh", 
+        "dmri_rsirnigm_cdk_mtrh", 
+        "dmri_rsirnigm_cdk_phrh", 
+        "dmri_rsirnigm_cdk_pcrh", 
+        "dmri_rsirnigm_cdk_poprh", 
+        "dmri_rsirnigm_cdk_pobrh", 
+        "dmri_rsirnigm_cdk_ptgrh",
+        "dmri_rsirnigm_cdk_pccrh", 
+        "dmri_rsirnigm_cdk_pctrh", 
+        "dmri_rsirnigm_cdk_pcgrh", 
+        "dmri_rsirnigm_cdk_prctrh", 
+        "dmri_rsirnigm_cdk_prcnrh", 
+        "dmri_rsirnigm_cdk_racrh", 
+        "dmri_rsirnigm_cdk_rmfrh", 
+        "dmri_rsirnigm_cdk_sfrh", 
+        "dmri_rsirnigm_cdk_sprh",
+        "dmri_rsirnigm_cdk_strh", 
+        "dmri_rsirnigm_cdk_smrh", 
+        "dmri_rsirnigm_cdk_fprh", 
+        "dmri_rsirnigm_cdk_tprh", 
+        "dmri_rsirnigm_cdk_ttrh", 
+        "dmri_rsirnigm_cdk_isrh"
+    ],
+    "abcd_drsip201": [
+        "dmri_rsirndgm_cdk_bstslh", 
+        "dmri_rsirndgm_cdk_caclh",
+        "dmri_rsirndgm_cdk_cmflh", 
+        "dmri_rsirndgm_cdk_cnlh", 
+        "dmri_rsirndgm_cdk_erlh", 
+        "dmri_rsirndgm_cdk_fflh", 
+        "dmri_rsirndgm_cdk_iplh", 
+        "dmri_rsirndgm_cdk_itlh", 
+        "dmri_rsirndgm_cdk_iclh", 
+        "dmri_rsirndgm_cdk_lolh", 
+        "dmri_rsirndgm_cdk_loflh", 
+        "dmri_rsirndgm_cdk_lglh", 
+        "dmri_rsirndgm_cdk_moflh", 
+        "dmri_rsirndgm_cdk_mtlh", 
+        "dmri_rsirndgm_cdk_phlh", 
+        "dmri_rsirndgm_cdk_pclh", 
+        "dmri_rsirndgm_cdk_poplh", 
+        "dmri_rsirndgm_cdk_poblh", 
+        "dmri_rsirndgm_cdk_ptglh", 
+        "dmri_rsirndgm_cdk_pcclh", 
+        "dmri_rsirndgm_cdk_pctlh", 
+        "dmri_rsirndgm_cdk_pcglh",
+        "dmri_rsirndgm_cdk_prctlh",
+        "dmri_rsirndgm_cdk_prcnlh",
+        "dmri_rsirndgm_cdk_raclh", 
+        "dmri_rsirndgm_cdk_rmflh", 
+        "dmri_rsirndgm_cdk_sflh", 
+        "dmri_rsirndgm_cdk_splh", 
+        "dmri_rsirndgm_cdk_stlh", 
+        "dmri_rsirndgm_cdk_smlh", 
+        "dmri_rsirndgm_cdk_fplh", 
+        "dmri_rsirndgm_cdk_tplh", 
+        "dmri_rsirndgm_cdk_ttlh", 
+        "dmri_rsirndgm_cdk_islh", 
+        "dmri_rsirndgm_cdk_bstsrh", 
+        "dmri_rsirndgm_cdk_cacrh", 
+        "dmri_rsirndgm_cdk_cmfrh", 
+        "dmri_rsirndgm_cdk_cnrh", 
+        "dmri_rsirndgm_cdk_errh", 
+        "dmri_rsirndgm_cdk_ffrh", 
+        "dmri_rsirndgm_cdk_iprh", 
+        "dmri_rsirndgm_cdk_itrh", 
+        "dmri_rsirndgm_cdk_icrh", 
+        "dmri_rsirndgm_cdk_lorh", 
+        "dmri_rsirndgm_cdk_lofrh", 
+        "dmri_rsirndgm_cdk_lgrh", 
+        "dmri_rsirndgm_cdk_mofrh", 
+        "dmri_rsirndgm_cdk_mtrh", 
+        "dmri_rsirndgm_cdk_phrh", 
+        "dmri_rsirndgm_cdk_pcrh", 
+        "dmri_rsirndgm_cdk_poprh", 
+        "dmri_rsirndgm_cdk_pobrh", 
+        "dmri_rsirndgm_cdk_ptgrh",
+        "dmri_rsirndgm_cdk_pccrh", 
+        "dmri_rsirndgm_cdk_pctrh", 
+        "dmri_rsirndgm_cdk_pcgrh", 
+        "dmri_rsirndgm_cdk_prctrh", 
+        "dmri_rsirndgm_cdk_prcnrh", 
+        "dmri_rsirndgm_cdk_racrh", 
+        "dmri_rsirndgm_cdk_rmfrh", 
+        "dmri_rsirndgm_cdk_sfrh", 
+        "dmri_rsirndgm_cdk_sprh",
+        "dmri_rsirndgm_cdk_strh", 
+        "dmri_rsirndgm_cdk_smrh", 
+        "dmri_rsirndgm_cdk_fprh", 
+        "dmri_rsirndgm_cdk_tprh", 
+        "dmri_rsirndgm_cdk_ttrh", 
+        "dmri_rsirndgm_cdk_isrh"
     ],
     "abcd_betnet02": [
         "rsfmri_c_ngd_ntpoints",
@@ -172,6 +323,7 @@ variables = {
     "abcd_imgincl01": [
         "imgincl_t1w_include", 
         "imgincl_rsfmri_include",
+        "imgincl_dmri_include"
     ],
     "abcd_mrfindings02": [
         "mrif_score"
@@ -248,9 +400,9 @@ for structure in variables.keys():
                               skiprows=[1], 
                               usecols= index + cols)
                 temp_df = temp_df0[temp_df0['eventname'] == timepoints[0]]
-                if structure in ["abcd_mrfindings02", "abcd_imgincl01", "abcd_betnet02", "abcd_lt01"]:
+                if structure in ["abcd_mrfindings02", "abcd_imgincl01", "abcd_betnet02", "abcd_lt01", "abcd_drsip101"]:
                     for variable in variables[structure]:
-                        if variable in ["interview_date", "imgincl_t1w_include", "rsfmri_c_ngd_ntpoints", "mrif_score", "imgincl_rsfmri_include"]:
+                        if variable in two_timept_vars:
                             temp_col = temp_df0[temp_df0['eventname'] == "2_year_follow_up_y_arm_1"][variable]
                             temp_col.name = f'{variable}2'
                             temp_df = pd.concat([temp_df, temp_col], axis=1)
@@ -376,5 +528,5 @@ data_dict.at['F6',
 
 data_dict.to_csv(join(OUT_DIR, 'data_dictionary.csv'))
 big_df = pd.concat([df, pm_factors, noise], axis=1)
-big_df.to_csv(join(OUT_DIR, 'data2.csv')
+big_df.to_csv(join(OUT_DIR, 'data4.csv')
 )

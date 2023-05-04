@@ -3,22 +3,18 @@
 
 import pandas as pd
 import numpy as np
+import seaborn as sns
 
-from os.path import join, exists
+from os.path import join, isdir
 from os import makedirs
 
-PROJ_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim1"
+PROJ_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim3"
 DATA_DIR = "data/"
 FIGS_DIR = "figures/"
 OUTP_DIR = "output/"
 
-if not exists(join(PROJ_DIR, OUTP_DIR)):
-    makedirs(join(PROJ_DIR, OUTP_DIR))
-else:
-    pass
-
-df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data.csv"), index_col=0, header=0, on_bad_lines='skip')
-print(df.columns)
+df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data4.csv"), index_col=0, header=0)
+all_subj = df.index
 
 df['interview_date'] = pd.to_datetime(df['interview_date'])
 df['interview_date2'] = pd.to_datetime(df['interview_date2'])
@@ -30,8 +26,8 @@ valid_address = df[df['reshist_addr1_valid'] == 1].index
 
 model_vars = [
     "mri_info_manufacturer",
-    "dmri_rsi_meanmotion",
-    "dmri_rsi_meanmotion2",
+    "rsfmri_c_ngd_ntpoints",
+    "rsfmri_c_ngd_ntpoints2",
     "physical_activity1_y",
     "stq_y_ss_weekday", 
     "stq_y_ss_weekend",
@@ -56,13 +52,12 @@ model_vars = [
     "F6"
     ]
 
-mri_vars = list(df.filter(regex=".*_rsir.*.change_score", axis=1).columns)
+mri_vars = list(df.filter(regex=".*rsfmri.*.change_score", axis=1).columns)
 
 model_vars  = model_vars + mri_vars
 
 # modality-specific filtering via masks
 # t1 quality for freesurfer ROI delineations
-# 1=include, 0=exclude
 smri_mask1 = df['imgincl_t1w_include'] == 0
 smri_mask2 = df['imgincl_t1w_include2'] == 0
 smri_mask = smri_mask1 * smri_mask2
@@ -76,34 +71,33 @@ dmri_mask3 = df['imgincl_dmri_include2'] == 0
 dmri_mask4 = df['dmri_rsi_meanmotion2'] > 2.
 dmri_mask = dmri_mask1 * dmri_mask2 * dmri_mask3 * dmri_mask4
 
+# rsfmri quality for FC estimates
+rsfmri_mask1 = df['imgincl_rsfmri_include'] == 0
+rsfmri_mask2 = df['rsfmri_c_ngd_ntpoints'] < 2.
+rsfmri_mask3 = df['imgincl_rsfmri_include2'] == 0
+rsfmri_mask4 = df['rsfmri_c_ngd_ntpoints2'] < 2.
+rsfmri_mask = rsfmri_mask1 * rsfmri_mask2 * rsfmri_mask3 * rsfmri_mask4
+
 # and no incidental findings
-# if true, then exclude
-# mrif_score 3 or 4 recommended for exclusion?
-# mrif_score 2 is normal anatomical variation
-# mrif_score 1 is no findings
-# mrif_score 0 means quality is too poor for rad read
-findings1 = df['mrif_score'] < 1.
-findings2 = df['mrif_score'] > 2.
-findings3 = df['mrif_score2'] < 1.
-findings4 = df['mrif_score2'] > 2.
+findings1 = df['mrif_score'] >= 1.
+findings2 = df['mrif_score'] <= 2.
+findings3 = df['mrif_score2'] >= 1.
+findings4 = df['mrif_score2'] <= 2.
 findings_mask = findings1 * findings2 * findings3 * findings4
 
 
-imaging_mask = smri_mask * dmri_mask * findings_mask
+rsfmri_mask = smri_mask * rsfmri_mask * findings_mask
+dmri_mask = smri_mask * dmri_mask * findings_mask
 
+rsfmri_cols = df.filter(regex='rsfmri.*change_score').columns
 dmri_cols = df.filter(regex='dmri.*change_score').columns
-
 # mask mri data
-# Replace values where the condition is True.
-df[dmri_cols].mask(imaging_mask, inplace=True)
-dmri_pass_subj = imaging_mask[imaging_mask == True].index
-dmri_quality = df.loc[dmri_pass_subj]
+df[dmri_cols].mask(dmri_mask, inplace=True)
+df[rsfmri_cols].mask(rsfmri_mask, inplace=True)
+dmri_pass_subj = dmri_mask[dmri_mask == True].index
+rsfmri_pass_subj = rsfmri_mask[rsfmri_mask == True].index
+rsfmri_quality = df.loc[rsfmri_pass_subj]
 
-temp_df = df.loc[dmri_pass_subj][model_vars]
-complete_cases = temp_df.dropna(how='any', axis=0).index
-temp_df = None
-
-complete_df = df.loc[complete_cases]
 
 # I want to compare
 # 1. the full dataset (i.e., regardless of missingness, quality, etc.)
@@ -112,11 +106,35 @@ complete_df = df.loc[complete_cases]
 
 df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
 quality_df = df[df['interview_date2'] < '2020-3-1']
-print(quality_df.index)
-print("n dupes:", np.sum(quality_df.index.duplicated()), "out of", len(quality_df.index))
-print(quality_df.dtypes)
-quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd2.csv"), encoding='utf-8')
+quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd.csv"))
 
+demographics = ["demo_prnt_marital_v2",
+                "demo_prnt_ed_v2",
+                "demo_comb_income_v2",
+                "race_ethnicity",
+                "site_id_l",
+                "sex", 
+                "mri_info_manufacturer",
+                "reshist_addr1_valid"
+               ]
+
+mri_qc = [
+    "imgincl_rsfmri_include",# baseline
+    "imgincl_t1w_include",# baseline
+    "mrif_score",# baseline
+    "rsfmri_c_ngd_ntpoints", # baseline
+    "imgincl_rsfmri_include2", # year 2 follow-up
+    "imgincl_t1w_include2",# year 2 follow-up
+    "mrif_score2",# year 2 follow-up
+    "rsfmri_c_ngd_ntpoints2", # year 2 follow-up
+    "interview_age", # baseline
+    "interview_date" # baseline
+]
+
+
+demo_and_qc = demographics + mri_qc
+
+demo_df = df[demo_and_qc]
 
 #qc_df = pd.read_csv(join(PROJ_DIR, DATA_DIR, 'data_qcd.csv'), 
 #                 header=0, 
@@ -126,6 +144,7 @@ quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd2.csv"), encoding='utf-8')
 
 pre_covid_df = df.loc[before_covid]
 pre_covid_good_address = pre_covid_df[pre_covid_df['reshist_addr1_valid'] == 1]
+rest_good = df.loc[rsfmri_pass_subj]
 dmri_good = df.loc[dmri_pass_subj]
 dmri_good = dmri_good[dmri_good['interview_date2'] < '2020-3-1']
 
@@ -133,6 +152,7 @@ col_to_df = {
     'whole_sample': df, 
     'pre_covid': pre_covid_df,
     'with_address': pre_covid_good_address,
+    'with_rsfmri': rest_good,
     'with_dmri': dmri_good,
     'complete_cases': quality_df.dropna(how='any')
 }
@@ -278,5 +298,7 @@ for subset in col_to_df.keys():
     table.at['Education_Missing', 
             subset] = temp_df['demo_prnt_ed_v2'].isna().sum() + len(temp_df[temp_df['demo_prnt_ed_v2'] == 999.])
 
+if not isdir(join(PROJ_DIR, OUTP_DIR)):
+    makedirs(join(PROJ_DIR, OUTP_DIR))
 
 table.to_csv(join(PROJ_DIR, OUTP_DIR, 'demographics.csv'))

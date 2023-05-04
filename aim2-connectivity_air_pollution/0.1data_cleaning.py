@@ -13,7 +13,7 @@ DATA_DIR = "data/"
 FIGS_DIR = "figures/"
 OUTP_DIR = "output/"
 
-df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data.csv"), index_col=0, header=0)
+df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data2.csv"), index_col=0, header=0)
 all_subj = df.index
 
 df['interview_date'] = pd.to_datetime(df['interview_date'])
@@ -79,10 +79,11 @@ findings_mask = findings1 * findings2 * findings3 * findings4
 
 imaging_mask = smri_mask * rsfmri_mask * findings_mask
 
-rsfmri_cols = df.filter(regex='rsfmri').columns
+rsfmri_cols = df.filter(regex='rsfmri.*change_score').columns
 
 # mask mri data
 rsfmri_pass_subj = df[rsfmri_cols].mask(imaging_mask).dropna().index
+df[rsfmri_cols].mask(imaging_mask, inplace=True)
 rsfmri_quality = df.loc[rsfmri_pass_subj]
 
 
@@ -92,8 +93,8 @@ rsfmri_quality = df.loc[rsfmri_pass_subj]
 # 3. complete case data
 
 
-quality_df = rsfmri_quality[rsfmri_quality['interview_date2'] < '2020-3-1']
-
+df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
+quality_df = df[df['interview_date2'] < '2020-3-1']
 quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd.csv"))
 
 demographics = ["demo_prnt_marital_v2",

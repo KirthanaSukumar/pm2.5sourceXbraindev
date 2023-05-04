@@ -248,7 +248,7 @@ DATA_DICT = pd.read_csv(join(DATA_DIR, 'generate_dataset/data_element_names.csv'
 
 
 # IF YOU WANT LONG FORMAT DATA, LONG=TRUE, IF YOU WANT WIDE FORMAT DATA, LONG=FALSE
-long = True
+long = False
 
 # initialize the progress bars
 manager = enlighten.get_manager()
@@ -326,12 +326,21 @@ for structure in variables.keys():
                     temp1 = pd.concat([temp1, temp2], axis=1)
                 temp_df = temp1
             else:
-                temp_df = pd.read_csv(path, 
+                temp_df0 = pd.read_csv(path, 
                               index_col="subjectkey", 
                               header=0, 
                               skiprows=[1], 
                               usecols= index + cols)
-                temp_df = temp_df[temp_df['eventname'] == timepoints[0]]
+                temp_df = temp_df0[temp_df0['eventname'] == timepoints[0]]
+                if structure in ["abcd_mrfindings02", "abcd_imgincl01", "abcd_drsip101", "abcd_lt01"]:
+                    for variable in variables[structure]:
+                        if variable in ["interview_date", "imgincl_t1w_include", "imgincl_dmri_include", "mrif_score", "dmri_rsi_meanmotion"]:
+                            temp_col = temp_df0[temp_df0['eventname'] == "2_year_follow_up_y_arm_1"][variable]
+                            temp_col.name = f'{variable}2'
+                            temp_df = pd.concat([temp_df, temp_col], axis=1)
+                        else:
+                            pass
+                
             df = pd.concat([df, temp_df], axis=1)
         if change_scores:
             if structure in changes:
