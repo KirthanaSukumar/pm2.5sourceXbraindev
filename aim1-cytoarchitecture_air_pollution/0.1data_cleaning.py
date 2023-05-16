@@ -63,18 +63,20 @@ model_vars  = model_vars + mri_vars
 # modality-specific filtering via masks
 # t1 quality for freesurfer ROI delineations
 # 1=include, 0=exclude
-smri_mask1 = df['imgincl_t1w_include'] == 0
-smri_mask2 = df['imgincl_t1w_include2'] == 0
+smri_mask1 = df['imgincl_t1w_include'] == 1
+smri_mask2 = df['imgincl_t1w_include2'] == 1
 smri_mask = smri_mask1 * smri_mask2
+
 
 # dmri quality for RSI estimates
 # 1=include, 0=exclude
 # head motion greater than 2mm FD on average = exclude
-dmri_mask1 = df['imgincl_dmri_include'] == 0
-dmri_mask2 = df['dmri_rsi_meanmotion'] > 2.
-dmri_mask3 = df['imgincl_dmri_include2'] == 0
-dmri_mask4 = df['dmri_rsi_meanmotion2'] > 2.
+dmri_mask1 = df['imgincl_dmri_include'] == 1
+dmri_mask2 = df['dmri_rsi_meanmotion'] < 2.
+dmri_mask3 = df['imgincl_dmri_include2'] == 1
+dmri_mask4 = df['dmri_rsi_meanmotion2'] < 2.
 dmri_mask = dmri_mask1 * dmri_mask2 * dmri_mask3 * dmri_mask4
+
 
 # and no incidental findings
 # if true, then exclude
@@ -82,22 +84,24 @@ dmri_mask = dmri_mask1 * dmri_mask2 * dmri_mask3 * dmri_mask4
 # mrif_score 2 is normal anatomical variation
 # mrif_score 1 is no findings
 # mrif_score 0 means quality is too poor for rad read
-findings1 = df['mrif_score'] < 1.
-findings2 = df['mrif_score'] > 2.
-findings3 = df['mrif_score2'] < 1.
-findings4 = df['mrif_score2'] > 2.
-findings_mask = findings1 * findings2 * findings3 * findings4
 
+findings1 = df['mrif_score'].between(1,2, inclusive='both')
+#findings2 = df['mrif_score'] == 2
+findings3 = df['mrif_score2'].between(1,2, inclusive='both')#
+#findings4 = df['mrif_score2'] == 2
+findings_mask = findings1 * findings3 #* findings3 * findings4
 
 imaging_mask = smri_mask * dmri_mask * findings_mask
+
+qc_fails = np.invert(imaging_mask)
 
 dmri_cols = df.filter(regex='dmri.*change_score').columns
 
 # mask mri data
 # Replace values where the condition is True.
-df[dmri_cols].mask(imaging_mask, inplace=True)
-dmri_pass_subj = imaging_mask[imaging_mask == True].index
-dmri_quality = df.loc[dmri_pass_subj]
+df[dmri_cols] = df[dmri_cols].mask(qc_fails)
+dmri_pass_subj = qc_fails[qc_fails == False].index
+print(len(dmri_pass_subj))
 
 temp_df = df.loc[dmri_pass_subj][model_vars]
 complete_cases = temp_df.dropna(how='any', axis=0).index
@@ -110,12 +114,15 @@ complete_df = df.loc[complete_cases]
 # 2. dataset filtered for MRI quality
 # 3. complete case data
 
-df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
+
 quality_df = df[df['interview_date2'] < '2020-3-1']
-print(quality_df.index)
+print(np.sum(quality_df[dmri_cols[0]].isnull()))
+
+#print(quality_df.index)
 print("n dupes:", np.sum(quality_df.index.duplicated()), "out of", len(quality_df.index))
-print(quality_df.dtypes)
-quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd2.csv"), encoding='utf-8')
+#print(quality_df.dtypes)
+quality_df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
+quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd3.csv"), encoding='utf-8')
 
 
 #qc_df = pd.read_csv(join(PROJ_DIR, DATA_DIR, 'data_qcd.csv'), 
@@ -217,10 +224,10 @@ for subset in col_to_df.keys():
     table.at['PM2.5_sdev', subset] = np.std(temp_df['reshist_addr1_pm25'])
 
     # demographics
-    table.at['Age_Missing', subset] = temp_df['interview_age'].isna().sum()
+    table.at['Age_Missing', subset] = temp_df['interview_age'].isnull().sum()
     table.at['Sex_M', subset] = len(temp_df[temp_df['sex'] == 'M'].index)
     table.at['Sex_F', subset] = len(temp_df[temp_df['sex'] == 'F'].index)
-    table.at['Sex_Missing', subset] = temp_df['sex'].isna().sum()
+    table.at['Sex_Missing', subset] = temp_df['sex'].isnull().sum()
     table.at['RE_White',
              subset] = len(temp_df[temp_df['race_ethnicity'] == 1.].index)
     table.at['RE_Black',
@@ -232,7 +239,7 @@ for subset in col_to_df.keys():
     table.at['RE_Refuse',
              subset] = len(temp_df[temp_df['race_ethnicity'] == 777.].index)
     table.at['RE_Missing',
-             subset] = temp_df['race_ethnicity'].isna().sum() + len(temp_df[temp_df['race_ethnicity'] == 999.].index)
+             subset] = temp_df['race_ethnicity'].isnull().sum() + len(temp_df[temp_df['race_ethnicity'] == 999.].index)
     table.at['Income_gt100k', 
          subset] = len(temp_df[temp_df['demo_comb_income_v2'].between(9.,10., inclusive='both')].index)
     table.at['Income_50to100k', 
@@ -242,7 +249,7 @@ for subset in col_to_df.keys():
     table.at['Income_dkrefuse', 
             subset] = len(temp_df[temp_df['demo_comb_income_v2'] == 777.].index)
     table.at['Income_Missing', 
-            subset] = len(temp_df[temp_df['demo_comb_income_v2'] == 999.].index) + temp_df['demo_comb_income_v2'].isna().sum()
+            subset] = len(temp_df[temp_df['demo_comb_income_v2'] == 999.].index) + temp_df['demo_comb_income_v2'].isnull().sum()
     table.at['MRI_Siemens', 
             subset] = len(temp_df[temp_df['mri_info_manufacturer'] == "SIEMENS"].index)
     table.at['MRI_GE', 
@@ -250,7 +257,7 @@ for subset in col_to_df.keys():
     table.at['MRI_Philips', 
             subset] = len(temp_df[temp_df['mri_info_manufacturer'] == "Philips Medical Systems"].index)
     table.at['MRI_Missing', 
-            subset] = len(temp_df[temp_df['mri_info_manufacturer'].isna()].index)
+            subset] = len(temp_df[temp_df['mri_info_manufacturer'].isnull()].index)
     table.at['Marital_Married', 
             subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 1.])
     table.at['Marital_Widowed', 
@@ -264,7 +271,7 @@ for subset in col_to_df.keys():
     table.at['Marital_Refused', 
             subset] = len(temp_df[temp_df["demo_prnt_marital_v2"] == 777.])
     table.at['Marital_Missing', 
-            subset] = temp_df["demo_prnt_marital_v2"].isna().sum() + len(temp_df[temp_df["demo_prnt_marital_v2"] == 999.])
+            subset] = temp_df["demo_prnt_marital_v2"].isnull().sum() + len(temp_df[temp_df["demo_prnt_marital_v2"] == 999.])
     table.at['Education_uptoHSGED', 
             subset] = len(temp_df[temp_df['demo_prnt_ed_v2'].between(0,14,inclusive='both')])
     table.at['Education_SomeColAA', 
@@ -276,7 +283,7 @@ for subset in col_to_df.keys():
     table.at['Education_Refused', 
             subset] = len(temp_df[temp_df['demo_prnt_ed_v2'] == 777.])
     table.at['Education_Missing', 
-            subset] = temp_df['demo_prnt_ed_v2'].isna().sum() + len(temp_df[temp_df['demo_prnt_ed_v2'] == 999.])
+            subset] = temp_df['demo_prnt_ed_v2'].isnull().sum() + len(temp_df[temp_df['demo_prnt_ed_v2'] == 999.])
 
 
 table.to_csv(join(PROJ_DIR, OUTP_DIR, 'demographics.csv'))
