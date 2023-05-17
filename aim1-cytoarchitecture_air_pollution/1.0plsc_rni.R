@@ -4,9 +4,7 @@ rm(list = ls())
 graphics.off()
 library(tidyverse)
 library(ExPosition)
-install.packages("TInPosition") # if needed
 library(TExPosition)
-library(TInPosition)
 library(PTCA4CATA)
 library(data4PCCAR)
 library(plyr)
@@ -20,6 +18,7 @@ library(grid)
 library(readxl)
 library(here)
 library(psych)
+library(RColorBrewer)
 # print versions pls
 sessionInfo()
 
@@ -79,13 +78,11 @@ df_covariates <- complete_df[, cov_cols]
 
 
 ## Performing residualization
-
 ###  MLRM for RSI data
 
 # dependent variables
 Group1.Y <- as.matrix(df_rsi)
 dim(Group1.Y)
-
 
 # independent variables/covariates
 Group1.X <- df_covariates
@@ -124,24 +121,34 @@ lm.Group1 <- lm(Group1.Y ~ Group1.X$interview_age +
 Group1_residuals <- data.frame()
 Group1_residuals <- as.data.frame(lm.Group1$residuals)
 
+pdf(paste(proj_dir, figs_dir, "rni-brain_change_residuals.pdf", sep = "/"),
+    width = 10, height = 10)
+plot(fitted(lm.Group1), residuals(lm.Group1))
+dev.off()
+
 #### Measure goodness of fit
 
 #{r echo=TRUE, fig.height=10, fig.width=12}
 # for one outcome variable
-plot(lm.Group1)
 
 # for matrix of outcome variables
 # loop the variables to obtain qq plot
 
 for (i in seq_len(ncol(Group1_residuals))) {
+  pdf(paste(proj_dir, figs_dir, paste("rni-fitted_vs_residuals",
+                                      colnames(Group1_residuals)[i], ".pdf",
+                                      sep = ""),
+            sep = "/"),
+      width = 10, height = 10)
   qqnorm(Group1_residuals[, i],
          main = paste0("Q-Q plot for ",
                        colnames(Group1_residuals)[i],
                        sep = ""))
   qqline(Group1_residuals[, i])
+  dev.off()
 }
 
-hist(as.data.frame(Group1_residuals))
+#hist(as.data.frame(Group1_residuals))
 # evaluation by predicton
 
 f1 <- fitted(lm.Group1)
@@ -149,8 +156,13 @@ r1 <- residuals(lm.Group1)
 
 
 for (i in seq_len(ncol(f1))) {
+  pdf(paste(proj_dir, figs_dir, paste("rni-fitted_vs_residuals",
+                                      colnames(f1)[i], ".pdf", sep = ""),
+            sep = "/"),
+      width = 10, height = 10)
   plot(f1[, i], r1[, i],
        main = paste0("fitted VS residual:   ", colnames(f1)[i], sep = ""))
+  dev.off()
 }
 
 
@@ -192,35 +204,44 @@ lm.Group2 <- lm(Group2.Y ~ Group1.X$interview_age +
 Group2_residuals <- data.frame()
 Group2_residuals <- as.data.frame(lm.Group2$residuals)
 
-
-
-
-
-
 #### Measure goodness of fit
 
 #{r echo=TRUE}
 
 for (i in seq_len(ncol(Group2_residuals))) {
+  pdf(paste(proj_dir, figs_dir, paste("rni-air_pollution_residuals-qq",
+                                      colnames(Group2_residuals)[i], ".pdf", sep = ""),
+            sep = "/"),
+      width = 10, height = 10)
   qqnorm(Group2_residuals[, i],
          main = paste0("Q-Q plot for ",
                        colnames(Group2_residuals)[i],
                        sep = ""))
   qqline(Group2_residuals[, i])
+  dev.off()
 }
 
-hist(as.data.frame(Group2_residuals))
+#hist(as.data.frame(Group2_residuals))
 
+pdf(paste(proj_dir, figs_dir, "rni-air_pollution_residuals.pdf", sep = "/"),
+    width = 10, height = 10)
 plot(fitted(lm.Group2), residuals(lm.Group2))
+dev.off()
+
 f <- fitted(lm.Group2)
 r <- residuals(lm.Group2)
 
 # add linear smoother
 for (i in seq_len(ncol(f))) {
+  pdf(paste(proj_dir, figs_dir, paste("rni-fitted_v_residual", 
+                                      colnames(f)[i], ".pdf", sep = ""), 
+      sep = "/"),
+      width = 10, height = 10)
   plot(f[, i], r[, i],
        main = paste0("fitted VS residual:   ",
                    colnames(f)[i],
                    sep = ""))
+  dev.off()
 }
 
 
@@ -246,7 +267,7 @@ col4col_n0 <- as.matrix(c("#f18c9c", "#f18d93", "#f18e8a",
                           "#ee81e9", "#ee83e0", "#ef84d7", "#ef86cf", "#ef87c8",
                           "#ef88c1", "#f089ba", "#f089b3", "#f08aac", "#f08ba5")) # nolint
 
-col4rsi < - col4col_n0
+col4rsi <- col4col_n0
 
 
 # setting colors for air pollutants
@@ -254,15 +275,13 @@ col4air <- c("#d8365d", "#8c7333", "#438432", "#37817b", "#3c7aad", "#ba3fc5")
 
 col4column_rsi <- matrix(nrow = ncol(df_rsi), ncol = 1)
 color.vec <- as.matrix(unique(colnames(df_rsi)))
-for (i in seq_len(unique(colnames(df_rsi)))){
+for (i in seq_len(ncol(df_rsi))){
   col4column_rsi[which(color.vec == (unique(colnames(df_rsi)))[i])] <- col4rsi[i]
 }
 
-seq_along()
 
 
 # colors set by site
-library(RColorBrewer)
 color_site <- brewer.pal(4, "PuOr")
 color_site <- colorRampPalette(color_site)(21)
 names(color_site) <- levels(unique(df_covariates$site))
@@ -274,7 +293,7 @@ colScale <- scale_colour_manual(name = "site", values = color_site)
 # Color for rows
 col4row  <- matrix(nrow = nrow(df_covariates), ncol = 1)
 
-for (i in seq_len(unique(df_covariates$site))) {
+for (i in seq_along(unique(df_covariates$site))) {
   col4row[which(df_covariates$site == unique(df_covariates$site)[i])] <- color_site[i]
 }
 
@@ -287,7 +306,7 @@ colScale <- scale_colour_manual(name = "area", values = color_site)
 
 col4row_area  <- matrix(nrow = nrow(df_covariates), ncol = 1)
 
-for (i in seq_len(unique(df_covariates$reshist_addr1_urban_area))) {
+for (i in seq_along(unique(df_covariates$reshist_addr1_urban_area))) {
   col4row_area[which(df_covariates$reshist_addr1_urban_area == unique(df_covariates$reshist_addr1_urban_area)[i])] <- color_area[i]
 }
 
@@ -434,28 +453,31 @@ write.csv(scree_df,
 
 
 # obtaining the scree plot
-my.scree <- PlotScree(ev = pls.res$TExPosition.Data$eigs,
+pdf(paste(proj_dir, figs_dir, "rni-PLSC_scree.pdf", sep = "/"),
+          width = 10, height = 10)
+PlotScree(ev = pls.res$TExPosition.Data$eigs,
                       title = "PLSC- Scree Plot",
                       p.ev = resPerm4PLSC$pEigenvalues,
                       plotKaiser = TRUE,
                       color4Kaiser = ggplot2::alpha("darkorchid4", .5),
 )
-
-
-my.scree
-dev.copy(png, paste(proj_dir, figs_dir, "rni-PLSC_scree.png", sep = "/"))
 dev.off()
+
+
 
 
 # additional permutation histogram plots
 
+#for (i in )
 zeDim <- 1
 eigs <- resPerm4PLSC$permEigenvalues[, zeDim]
 obs <- as.numeric(resPerm4PLSC$fixedEigenvalues[zeDim])
+pdf(paste(proj_dir, figs_dir, "rni-LD1_perm_hist.pdf", sep = "/"),
+    width = 10, height = 10)
 pH1 <- prettyHist(
   distribution = eigs,
   observed = obs,
-  xlim = c(0.002, 0.018), # needs to be set by hand
+  xlim = c(min(obs), max(obs)), # needs to be set by hand
   breaks = 30,
   border = "white",
   main = paste0("Permutation Test "),
@@ -463,16 +485,17 @@ pH1 <- prettyHist(
 Latent dimension ", zeDim),
   ylab = "Number of samples",
   counts = FALSE)
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_perm_hist.png", sep = "/"))
 dev.off()
 
 zeDim <- 2
 eigs <- resPerm4PLSC$permEigenvalues[, zeDim]
 obs <- as.numeric(resPerm4PLSC$fixedEigenvalues[zeDim])
+pdf(paste(proj_dir, figs_dir, "rni-LD2_perm_hist.pdf", sep = "/"),
+    width = 10, height = 10)
 pH2 <- prettyHist(
   distribution = eigs,
   observed = obs,
-  xlim = c(0.002, 0.018), # needs to be set by hand
+  xlim = c(min(obs), max(obs)), # needs to be set by hand
   breaks = 30,
   border = "white",
   main = paste0("Permutation Test "),
@@ -480,7 +503,6 @@ pH2 <- prettyHist(
 Latent dimension ", zeDim),
   ylab = "Number of samples",
   counts = FALSE)
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD2_perm_hist.png", sep = "/"))
 dev.off()
 
 
@@ -516,6 +538,7 @@ colnames(lv.1.group.boot$BootCube) <- c("Lx 1", "Ly 1")
 rownames(latvar.1) <- df_covariates$subjectkey
 
 # plotiing the factor Maps
+
 plot.lv1 <- createFactorMap(latvar.1,
                             col.points = col4row,
                             col.labels = col4row,
@@ -529,18 +552,18 @@ plot1.mean <- createFactorMap(lv.1.group,
                               col.labels = col4Means,
                               cex = 4,
                               pch = 17,
-                              force =0.1,
+                              force = 0.1,
                               alpha.points = 0.8)
 
-plot1.meanCI <- MakeCIEllipses(lv.1.group.boot$BootCube[,c(1:2),], # get the first two components
+plot1.meanCI <- MakeCIEllipses(lv.1.group.boot$BootCube[, c(1:2), ], # get the first two components
                                col = col4Means[rownames(lv.1.group.boot$BootCube)],
                                names.of.factors = c("Lx 1", "Ly 1")
 )
-
+pdf(paste(proj_dir, figs_dir, "rni-LD1_factor_map.pdf", sep = "/"),
+    width = 10, height = 10)
 plot1 <- plot.lv1$zeMap_background + plot.lv1$zeMap_dots+ plot.lv1$zeMap_text + plot1.mean$zeMap_dots + plot1.mean$zeMap_text + plot1.meanCI 
-plot1
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_factor_map.png", sep="/"))
 dev.off()
+plot1
 
 # check for the outlier
 outlier <- subset(latvar.1, rowSums(latvar.1 > 0.3) > 0)
@@ -558,6 +581,8 @@ colnames(lv.2.group.boot$BootCube) <- c("Lx 2", "Ly 2")
 rownames(latvar.2) <- df_covariates$subjectkey
 
 # plotiing the factor Maps
+pdf(paste(proj_dir, figs_dir, "rni-LD2_factor_map.pdf", sep = "/"),
+    width = 10, height = 10)
 plot.lv2 <- createFactorMap(latvar.2,
                             col.points = col4row,
                             col.labels = col4row,
@@ -571,7 +596,7 @@ plot2.mean <- createFactorMap(lv.2.group,
                               col.labels = col4Means,
                               cex = 4,
                               pch = 17,
-                              force =0.1,
+                              force = 0.1,
                               alpha.points = 0.8)
 
 plot2.meanCI <- MakeCIEllipses(lv.2.group.boot$BootCube[,c(1:2),], # get the first two components
@@ -580,9 +605,8 @@ plot2.meanCI <- MakeCIEllipses(lv.2.group.boot$BootCube[,c(1:2),], # get the fir
 )
 
 plot2 <- plot.lv2$zeMap_background + plot.lv2$zeMap_dots+ plot.lv2$zeMap_text + plot2.mean$zeMap_dots + plot2.mean$zeMap_text + plot2.meanCI 
-plot2
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD2_factor_map.png", sep="/"))
 dev.off()
+plot2
 
 # check for the outlier
 outlier <- subset(latvar.2, rowSums(latvar.2 > 0.3) > 0)
@@ -596,18 +620,20 @@ print(rownames(outlier))
 # {r echo=TRUE}
 ### Column Factor scores of the 1st component of data1 representing RSI measures and data2 representing air pollutants
 
-#Fi:column factor scores for data1(RSI measures) or Loadings of data1(RSI measures)
-Fi<- pls.res$TExPosition.Data$fi
+#Fi:column factor scores for data1(RSI measures) or
+#Loadings of data1(RSI measures)
+Fi <- pls.res$TExPosition.Data$fi
 
-#Fi:column factor scores for data2(Air pollutants exposure) or Loadings of data2(air pollutants exposure)
-Fj<- pls.res$TExPosition.Data$fj
+#Fi:column factor scores for data2(Air pollutants exposure)
+#or Loadings of data2(air pollutants exposure)
+Fj <- pls.res$TExPosition.Data$fj
 
 # Generating loadings map of Fi
 p.loadings <- createFactorMap(Fi,
                               axis1 = 1,
                               axis2 = 2,
                               display.points = TRUE,
-                              display.labels = T,
+                              display.labels = TRUE,
                               col.points = col4column_rsi,
                               col.labels = col4column_rsi,
                               title = "Loadings of Columns RSI",
@@ -620,13 +646,13 @@ label4map <- createxyLabels.gen(x_axis = 1, y_axis = 2,
                                 lambda = pls.res$TExPosition.Data$eigs,
                                 tau = pls.res$TExPosition.Data$t
 )
-
-p.plot <- p.loadings$zeMap + label4map 
-
+pdf(paste(proj_dir, figs_dir, "rni-region_loading_lv1xlv2.pdf", sep = "/"),
+    width = 10, height = 10)
+p.plot <- p.loadings$zeMap + label4map
+dev.off()
 
 p.plot
-dev.copy(png, paste(proj_dir, figs_dir, "rni-region_loading_lv1xlv2.png", sep="/"))
-dev.off()
+
 
 # Generating loadings map of Fj
 q.loadings <- createFactorMap(Fj,
@@ -646,16 +672,16 @@ label4map <- createxyLabels.gen(x_axis = 1, y_axis = 2,
                                 lambda = pls.res$TExPosition.Data$eigs,
                                 tau = pls.res$TExPosition.Data$t
 )
-
+pdf(paste(proj_dir, figs_dir, "rni-apsource_loading_lv1xlv2.pdf", sep = "/"),
+    width = 10, height = 10)
 q.plot <- q.loadings$zeMap + label4map 
-
-q.plot
-dev.copy(png, paste(proj_dir, figs_dir, "rni-apsource_loading_lv1xlv2.png", sep="/"))
 dev.off()
+q.plot
 
 
 
-### 5. Column Loadings  
+
+### 5. Column Loadings 
 
 # These are the loadings obtained after performing SVD(R) on correlation matrix.
 
@@ -663,62 +689,60 @@ dev.off()
 # {r echo=TRUE}
 
 #generating bar plots for loadings of RSI data table
-P.data1<- pls.res$TExPosition.Data$pdq$p
+P.data1 <- pls.res$TExPosition.Data$pdq$p
 
-
+pdf(paste(proj_dir, figs_dir, "rni-LD1_brain_loadings.pdf", sep = "/"),
+    width = 10, height = 10)
 plot_P.data1 <- PrettyBarPlot2(
-  bootratio = P.data1[,1], 
-  threshold = 0, 
-  ylim = NULL, 
-  color4bar = gplots::col2hex(col4rsi),
-  color4ns = "gray75", 
-  plotnames = TRUE, 
-  main = "Loadings of RSI variables", 
+  bootratio = P.data1[, 1],
+  threshold = 0,
+  ylim = NULL,
+  color4bar = col4rsi,
+  color4ns = "gray75",
+  plotnames = TRUE,
+  main = "Loadings of RSI variables",
   ylab = " P Loadings ",
   horizontal = TRUE)
-
-
-plot_P.data1 
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_brain_loadings.png", sep="/"))
 dev.off()
 
+plot_P.data1
+
+
+
 #generating bar plots for loadings of Air pollutants data table
-Q.data2<- pls.res$TExPosition.Data$pdq$q
+Q.data2 <- pls.res$TExPosition.Data$pdq$q
 
-
+pdf(paste(proj_dir, figs_dir, "rni-LD1_apsource_loadings.pdf", sep = "/"),
+    width = 10, height = 10)
 plot_Q.data2 <- PrettyBarPlot2(
-  bootratio = Q.data2[,1], 
-  threshold = 0, 
-  ylim = NULL, 
-  color4bar = gplots::col2hex(col4air),
-  color4ns = "white", 
-  plotnames = TRUE, 
-  main = "Loadings of Air pollution variables", 
+  bootratio = Q.data2[,1],
+  threshold = 0,
+  ylim = NULL,
+  color4bar = col4air,
+  color4ns = "white",
+  plotnames = TRUE,
+  main = "Loadings of Air pollution variables",
   ylab = " Q Loadings ")
-
+dev.off()
 
 
 plot_Q.data2
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_apsource_loadings.png", sep="/"))
-dev.off()
+
+
 
 # saving the loading table into excel file.
 air_loadings <- as.data.frame(Q.data2)
 rni_loadings <- as.data.frame(P.data1)
 
-#air_loadings <-cbind(" "=rownames(air_loadings), air_loadings)
-#brain_loadings <-cbind(" "=rownames(brain_loadings), brain_loadings)
-#library("writexl")
-#write.csv(df_loadings,paste(proj_dir, outp_dir, "plsc_loadings_rni.csv", sep = "/"))
-
 
 ### 6. Inference Bootstrap
 
 
-# The Bootstrap ratio barplot show that the contributions are significantly stable.
+# The Bootstrap ratio barplot show that the
+#contributions are significantly stable.
 # {r echo=TRUE}
-#Looking into what the resBootPLSC is giving us 
-resBoot4PLSC <- Boot4PLSC(data1, # First Data matrix 
+#Looking into what the resBootPLSC is giving us
+resBoot4PLSC <- Boot4PLSC(data1, # First Data matrix
                           data2, # Second Data matrix
                           nIter = 10000, # How many iterations
                           Fi = pls.res$TExPosition.Data$fi,
@@ -730,9 +754,6 @@ resBoot4PLSC <- Boot4PLSC(data1, # First Data matrix
                           alphaLevel = 1)
 
 resBoot4PLSC
-
-
-
 
 # {r echo=TRUE}
 BR.I <- resBoot4PLSC$bootRatios.i
@@ -747,29 +768,36 @@ air_res <- cbind.data.frame(air_loadings, air_bootstrap)
 rni_res <- cbind.data.frame(rni_loadings, rni_bootstrap)
 
 
-write.csv(air_res,paste(proj_dir, 
-                        outp_dir, 
-                        "rni-ap_source_Q.csv", 
-                        sep = "/"), row.names = T)
+write.csv(air_res, paste(proj_dir,
+                        outp_dir,
+                        "rni-ap_source_Q.csv",
+                        sep = "/"), row.names = TRUE)
 
-write.csv(rni_res,paste(proj_dir, 
-                        outp_dir, 
+write.csv(rni_res, paste(proj_dir,
+                        outp_dir,
                         "rni-brain_P.csv", 
-                        sep = "/"), row.names = T)
+                        sep = "/"), row.names = TRUE)
 
 
 #bootstrap ratios for dimension 1
-laDim = 1
-
+laDim <- 1
+pdf(paste(proj_dir, figs_dir, "rni-LD1_brain_saliences.pdf", sep = "/"),
+    width = 10, height = 10)
 ba001.BR1.I <- PrettyBarPlot2(BR.I[,laDim],
                               threshold = 2,
                               font.size = 4,
-                              color4ns = "gray85", 
+                              color4ns = "gray85",
                               color4bar = col4rsi, # we need hex code
                               ylab = "Bootstrap ratios"
                               #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
-) + ggtitle(paste0("Latent dimension ", laDim), subtitle = "Grey Matter Isotropic Intracellular Diffusion Saliences (Loadings)")
+) + ggtitle(paste0("Latent dimension ",
+                   laDim),
+            subtitle = "Cortical Isotropic Intracellular Diffusion Saliences")
+dev.off()
 
+
+pdf(paste(proj_dir, figs_dir, "rni-LD1_apsource_saliences.pdf", sep = "/"),
+    width = 10, height = 10)
 ba002.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
                               threshold = 2,
                               font.size = 4,
@@ -778,12 +806,6 @@ ba002.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
                               ylab = "Bootstrap ratios"
                               #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
 ) + ggtitle(paste0("Latent dimension ", laDim), subtitle = "Air Pollution Source Saliences (loadings)")
-
-ba001.BR1.I
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_brain_saliences.png", sep="/"))
-dev.off()
-ba002.BR1.J 
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD1_apsource_saliences.png", sep="/"))
 dev.off()
 
 
@@ -795,28 +817,28 @@ BR.J <- resBoot4PLSC$bootRatios.j
 
 
 #bootstrap ratios for dimension 2
-laDim = 2
+laDim <- 2
 
+pdf(paste(proj_dir, figs_dir, "rni-LD2_brain_saliences.pdf", sep = "/"),
+    width = 10, height = 10)
 ba001.BR1.I <- PrettyBarPlot2(BR.I[,laDim],
                               threshold = 2,
                               font.size = 4,
                               color4bar = col4rsi, # we need hex code
                               ylab = "Bootstrap ratios"
                               #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
-) + ggtitle(paste0("Latent dimension ", laDim), subtitle = "Grey Matter Isotropic Diffusion Saliences (Loadings)")
+) + ggtitle(paste0("Latent dimension ", laDim), 
+            subtitle = "Cortical Isotropic Intracellular Diffusion Saliences")
+dev.off()
 
+pdf(paste(proj_dir, figs_dir, "rni-LD2_apsource_saliences.pdf", sep = "/"),
+    width = 10, height = 10)
 ba002.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
                               threshold = 2,
                               font.size = 4,
-                              color4bar = gplots::col2hex(col4air),
+                              color4bar = col4air,
                               ylab = "Bootstrap ratios"
                               #ylim = c(1.2*min(BR[,laDim]), 1.2*max(BR[,laDim]))
-) + ggtitle(paste0("Latent dimension ", laDim), subtitle = "Air Pollution Source Saliences (loadings)")
-
-ba001.BR1.I
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD2_brain_saliences.png", sep="/"))
+) + ggtitle(paste0("Latent dimension ", laDim), 
+            subtitle = "Air Pollution Source Saliences")
 dev.off()
-ba002.BR1.J 
-dev.copy(png, paste(proj_dir, figs_dir, "rni-LD2_apsource_saliences.png", sep="/"))
-dev.off()
-
