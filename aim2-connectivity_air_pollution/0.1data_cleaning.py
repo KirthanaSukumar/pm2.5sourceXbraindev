@@ -63,18 +63,18 @@ smri_mask2 = df['imgincl_t1w_include2'] == 0
 smri_mask = smri_mask1 * smri_mask2
 
 # rsfmri quality for FC estimates
-rsfmri_mask1 = df['imgincl_rsfmri_include'] == 0
-rsfmri_mask2 = df['rsfmri_c_ngd_ntpoints'] < 2.
-rsfmri_mask3 = df['imgincl_rsfmri_include2'] == 0
-rsfmri_mask4 = df['rsfmri_c_ngd_ntpoints2'] < 2.
+# specify the "keeps" and then invert the mask before applying
+rsfmri_mask1 = df['imgincl_rsfmri_include'] == 1
+rsfmri_mask2 = df['rsfmri_c_ngd_ntpoints'] >= 750.
+rsfmri_mask3 = df['imgincl_rsfmri_include2'] == 1
+rsfmri_mask4 = df['rsfmri_c_ngd_ntpoints2'] >= 750.
 rsfmri_mask = rsfmri_mask1 * rsfmri_mask2 * rsfmri_mask3 * rsfmri_mask4
 
 # and no incidental findings
-findings1 = df['mrif_score'] >= 1.
-findings2 = df['mrif_score'] <= 2.
-findings3 = df['mrif_score2'] >= 1.
-findings4 = df['mrif_score2'] <= 2.
-findings_mask = findings1 * findings2 * findings3 * findings4
+findings1 = df['mrif_score'].between(1,2, inclusive='both')
+findings2 = df['mrif_score2'].between(1,2, inclusive='both')
+
+findings_mask = findings1 * findings2
 
 
 imaging_mask = smri_mask * rsfmri_mask * findings_mask
