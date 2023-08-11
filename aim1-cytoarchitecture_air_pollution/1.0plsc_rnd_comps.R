@@ -42,10 +42,16 @@ df <- read.csv(paste(proj_dir,
                      collapse = NULL),
                header = TRUE,
                row.names = 1)
+comp_df <- read.csv("/Volumes/projects_herting/LABDOCS/PROJECTS/ABCD/Data/release5.0/core/linked-external-data/led_l_particulat.csv",
+                    header=TRUE, row.names=1)
 
 rnd_cols <- colnames(df[, grep(pattern = "dmri_rsirndgm.*\\change_score",
                      colnames(df))])
-ap_cols <- c("F1", "F2", "F3", "F4", "F5", "F6")
+ap_cols <- c("reshist_addr1_br", "reshist_addr1_ca", "reshist_addr1_cu",
+             "reshist_addr1_ec", "reshist_addr1_fe", "reshist_addr1_k",
+             "reshist_addr1_nh4", "reshist_addr1_ni", "reshist_addr1_no3",
+             "reshist_addr1_oc", "reshist_addr1_pb", "reshist_addr1_si",
+             "reshist_addr1_so4", "reshist_addr1_v", "reshist_addr1_zn")
 cov_cols <- c("sex",
               "interview_age",
               "ehi_y_ss_scoreb",
@@ -63,7 +69,10 @@ cov_cols <- c("sex",
 )
 fd_cols <- c("dmri_rsi_meanmotion", "dmri_rsi_meanmotion2")
 
-temp_df <- df[, c(rnd_cols, ap_cols, cov_cols, fd_cols)]
+temp_df <- df[, c(rnd_cols, cov_cols, fd_cols)]
+ap_df = comp_df[rownames(temp_df),c(ap_cols)]
+
+temp_df <- cbind(ap_df, temp_df)
 
 complete_df <- drop_na(temp_df)
 
@@ -157,12 +166,11 @@ for (i in seq_len(ncol(f1))) {
 
 #{r echo=TRUE}
 
-names(df_air) <-  c("Crustal",
-                    "NH4 SO4",
-                    "Biomass ",
-                    "Traffic",
-                    "NH4 NO3",
-                    "Industrial")
+names(df_air) <-  c("Br", "Ca", "Cu",
+                    "EC", "Fe", "K",
+                    "NH4", "Ni", "NO3",
+                    "OC", "Pb", "Si",
+                    "SO4", "V", "Zn")
 Group2.Y <- as.matrix(df_air)
 corP_pollutants <- cor(df_air)
 corK_pollutants <- cor(df_air, method = "kendall")
@@ -250,7 +258,11 @@ col4rsi <- col4col_n0
 
 
 # setting colors for air pollutants
-col4air <- c("#d8365d", "#8c7333", "#438432", "#37817b", "#3c7aad", "#ba3fc5")
+col4air <- c("#d8365d", "#d8365d", "#d8365d", 
+             "#8c7333", "#8c7333", "#8c7333", 
+             "#438432", "#438432", "#438432", 
+             "#37817b", "#37817b", "#37817b", 
+             "#3c7aad", "#3c7aad", "#3c7aad")
 
 col4column_rsi <- matrix(nrow = ncol(df_rsi), ncol = 1)
 color.vec <- as.matrix(unique(colnames(df_rsi)))
@@ -278,38 +290,38 @@ for (i in seq_along(unique(df_covariates$site))) {
 
 
 # Colors set by area
-color_area <- brewer.pal(4, "PuOr")
-color_area <- colorRampPalette(color_area)(3)
-names(color_site) <- levels(unique(df_covariates$reshist_addr1_urban_area))
-colScale <- scale_colour_manual(name = "area", values = color_site)
+#color_area <- brewer.pal(4, "PuOr")
+#color_area <- colorRampPalette(color_area)(3)
+#names(color_site) <- levels(unique(df_covariates$reshist_addr1_urban_area))
+#colScale <- scale_colour_manual(name = "area", values = color_site)
 
-col4row_area  <- matrix(nrow = nrow(df_covariates), ncol = 1)
+#col4row_area  <- matrix(nrow = nrow(df_covariates), ncol = 1)
 
-for (i in seq_along(unique(df_covariates$reshist_addr1_urban_area))) {
-  col4row_area[which(df_covariates$reshist_addr1_urban_area == unique(df_covariates$reshist_addr1_urban_area)[i])] <- color_area[i]
-}
+#for (i in seq_along(unique(df_covariates$reshist_addr1_urban_area))) {
+#  col4row_area[which(df_covariates$reshist_addr1_urban_area == unique(df_covariates$reshist_addr1_urban_area)[i])] <- color_area[i]
+#}
 
 
-col4row_sex <- df_covariates$sex
-col4row_sex <- as.matrix(recode(col4row_sex,
-                                "F" =  "red",
-                                "M" =  "green",
-))
+#col4row_sex <- df_covariates$sex
+#col4row_sex <- as.matrix(recode(col4row_sex,
+#                                "F" =  "red",
+#                                "M" =  "green",
+#))
 
 # colors set by age
-df_covariates$age <- cut(df_covariates$interview_age,
-                         breaks = c(0, 114, 120, 126, 133),
-                         labels = c("9-9.5 yrs",
-                                    "9.5-10 yrs",
-                                    "10-10.5 yrs",
-                                    "10.5-11 yrs"))
+#df_covariates$age <- cut(df_covariates$interview_age,
+#                         breaks = c(0, 114, 120, 126, 133),
+#                         labels = c("9-9.5 yrs",
+#                                    "9.5-10 yrs",
+#                                    "10-10.5 yrs",
+#                                    "10.5-11 yrs"))
 
-col4row_age <- df_covariates$age
-col4row_age <- as.matrix(recode(col4row_age,
-                                "9-9.5 yrs" =  "red",
-                                "9.5-10 yrs" =  "plum",
-                                "10-10.5 yrs" =  "mediumorchid3",
-                                "10.5-11 yrs" =  "royalblue"))
+#col4row_age <- df_covariates$age
+#col4row_age <- as.matrix(recode(col4row_age,
+#                                "9-9.5 yrs" =  "red",
+#                                "9.5-10 yrs" =  "plum",
+#                                "10-10.5 yrs" =  "mediumorchid3",
+#                                "10.5-11 yrs" =  "royalblue"))
 
 
 
@@ -429,7 +441,7 @@ write.csv(scree_df,
           paste(proj_dir, outp_dir,
                 paste("rnd-scree_values_",
                       resPerm4PLSC$pOmnibus,
-                      ".csv",
+                      "-components.csv",
                       sep = ""),
                 sep = "/"))
 
@@ -465,11 +477,11 @@ if (resPerm4PLSC$pOmnibus < 0.01) {
 Latent dimension ", zeDim),
         ylab = "Number of samples",
         counts = FALSE)
-      ggsave(q.plot, file=paste(proj_dir, 
+      ggsave(pH1, file=paste(proj_dir, 
                                 figs_dir, 
                                 paste("rnd-LD",
                                       i,
-                                      "_perm_hist.png",
+                                      "_perm_hist-components.png",
                                       sep=""), 
                                 sep="/"), 
       width = 10, height = 10, units = "in", dpi=600)
@@ -533,7 +545,7 @@ plot1.meanCI <- MakeCIEllipses(lv.1.group.boot$BootCube[, c(1:2), ], # get the f
 )
 plot1 <- plot.lv1$zeMap_background + plot.lv1$zeMap_dots+ plot.lv1$zeMap_text + plot1.mean$zeMap_dots + plot1.mean$zeMap_text + plot1.meanCI 
 plot1
-ggsave(plot1, file=paste(proj_dir, figs_dir, "rnd-LD1_factor_map.png", 
+ggsave(plot1, file=paste(proj_dir, figs_dir, "rnd-LD1_factor_map-components.png", 
                           sep = "/"), 
 width = 10, height = 10, units = "in", dpi=600)
 
@@ -578,7 +590,7 @@ plot2.meanCI <- MakeCIEllipses(lv.2.group.boot$BootCube[,c(1:2),], # get the fir
 
 plot2 <- plot.lv2$zeMap_background + plot.lv2$zeMap_dots+ plot.lv2$zeMap_text + plot2.mean$zeMap_dots + plot2.mean$zeMap_text + plot2.meanCI 
 plot2
-ggsave(plot2, file=paste(proj_dir, figs_dir, "rnd-LD2_factor_map.png", 
+ggsave(plot2, file=paste(proj_dir, figs_dir, "rnd-LD2_factor_map-components.png", 
                           sep = "/"), 
 width = 10, height = 10, units = "in", dpi=600)
 
@@ -623,7 +635,7 @@ label4map <- createxyLabels.gen(x_axis = 1, y_axis = 2,
 
 p.plot <- p.loadings$zeMap + label4map
 p.plot
-ggsave(p.plot, file=paste(proj_dir, figs_dir, "rnd-brain_factors.png", 
+ggsave(p.plot, file=paste(proj_dir, figs_dir, "rnd-brain_factors-components.png", 
                           sep = "/"), 
 width = 10, height = 10, units = "in", dpi=600)
 
@@ -649,7 +661,7 @@ label4map <- createxyLabels.gen(x_axis = 1, y_axis = 2,
 
 q.plot <- q.loadings$zeMap + label4map 
 q.plot
-ggsave(q.plot, file=paste(proj_dir, figs_dir, "rnd-air_factors.png", 
+ggsave(q.plot, file=paste(proj_dir, figs_dir, "rnd-air_factors-components.png", 
                                 sep = "/"), 
 width = 10, height = 10, units = "in", dpi=600)
 
@@ -676,7 +688,7 @@ plot_P.data1 <- PrettyBarPlot2(
   horizontal = TRUE)
 
 plot_P.data1
-ggsave(plot_P.data1, file=paste(proj_dir, figs_dir, "rnd-brain_P.png", 
+ggsave(plot_P.data1, file=paste(proj_dir, figs_dir, "rnd-brain_P-components.png", 
                                 sep = "/"), 
 width = 10, height = 10, units = "in", dpi=600)
 
@@ -695,7 +707,7 @@ plot_Q.data2 <- PrettyBarPlot2(
   ylab = " Q Loadings ")
 
 plot_Q.data2
-ggsave(plot_Q.data2, file=paste(proj_dir, figs_dir, "rnd-air_Q.png", 
+ggsave(plot_Q.data2, file=paste(proj_dir, figs_dir, "rnd-air_Q-components.png", 
                                                          sep = "/"), 
        width = 10, height = 10, units = "in", dpi=600)
 
@@ -740,12 +752,12 @@ rnd_res <- cbind.data.frame(rnd_loadings, rnd_bootstrap)
 
 write.csv(air_res, paste(proj_dir,
                         outp_dir,
-                        "rnd-ap_source_Q.csv",
+                        "rnd-ap_source_Q-components.csv",
                         sep = "/"), row.names = TRUE)
 
 write.csv(rnd_res, paste(proj_dir,
                         outp_dir,
-                        "rnd-brain_P.csv", 
+                        "rnd-brain_P-components.csv", 
                         sep = "/"), row.names = TRUE)
 
 if (resPerm4PLSC$pOmnibus < 0.01) {
@@ -755,7 +767,7 @@ if (resPerm4PLSC$pOmnibus < 0.01) {
       print(laDim)
       png(paste(proj_dir, figs_dir, paste("rnd-LD", 
                                           i, 
-                                          "_brain_saliences.png", 
+                                          "_brain_saliences-components.png", 
                                           sep=""), sep = "/"),
           width = 10, height = 10, res = 600, units = "in")
       ba001.BR1.I <- PrettyBarPlot2(BR.I[,laDim],
@@ -771,14 +783,14 @@ if (resPerm4PLSC$pOmnibus < 0.01) {
       ba001.BR1.I
       ggsave(ba001.BR1.I, file=paste(proj_dir, figs_dir, paste("rnd-LD", 
                                                                i, 
-                                                               "_brain_saliences.png", 
+                                                               "_brain_saliences-components.png", 
                                                                sep=""), sep = "/"), 
              width = 10, height = 10, units = "in", dpi=600)
       
       
       png(paste(proj_dir, figs_dir, paste("rnd-LD", 
                                           i, 
-                                          "_air_saliences.png", 
+                                          "_air_saliences-components.png", 
                                           sep=""), sep = "/"),
           width = 10, height = 10, res = 600, units = "in")
       ba001.BR1.J <- PrettyBarPlot2(BR.J[,laDim],
@@ -792,7 +804,7 @@ if (resPerm4PLSC$pOmnibus < 0.01) {
       ba001.BR1.J
       ggsave(ba001.BR1.J, file=paste(proj_dir, figs_dir, paste("rnd-LD", 
                                                                i, 
-                                                               "_air_saliences.png", 
+                                                               "_air_salience-components.png", 
                                                                sep=""), sep = "/"), 
              width = 10, height = 10, units = "in", dpi=600)
       

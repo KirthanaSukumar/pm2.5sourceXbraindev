@@ -17,7 +17,7 @@ if not exists(join(PROJ_DIR, OUTP_DIR)):
 else:
     pass
 
-df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data.csv"), index_col=0, header=0, on_bad_lines='skip')
+df = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data.pkl"))
 print(df.columns)
 
 df['interview_date'] = pd.to_datetime(df['interview_date'])
@@ -122,7 +122,8 @@ print(np.sum(quality_df[dmri_cols[0]].isnull()))
 print("n dupes:", np.sum(quality_df.index.duplicated()), "out of", len(quality_df.index))
 #print(quality_df.dtypes)
 quality_df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
-quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd3.csv"), encoding='utf-8')
+quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd4.csv"), encoding='utf-8')
+quality_df.to_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd.pkl"))
 
 
 #qc_df = pd.read_csv(join(PROJ_DIR, DATA_DIR, 'data_qcd.csv'), 

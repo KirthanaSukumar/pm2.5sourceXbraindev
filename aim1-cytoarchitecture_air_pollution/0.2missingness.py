@@ -62,12 +62,12 @@ numerical_vars = [
     "reshist_addr1_popdensity",  # MS
     "nsc_p_ss_mean_3_items",  # MS
     "reshist_addr1_pm25",
-    "F1",  # MS
-    "F2",  # MS
-    "F3",  # MS
-    "F4",  # MS
-    "F5", # MS
-    "F6" # MS
+    "Crustal",  # MS
+    "Ammonium_Sulphates",  # MS
+    "Biomass_burning",  # MS
+    "Traffic",  # MS
+    "Ammonium_Nitrates", # MS
+    "Industrial" # MS
 ]
 
 categorical_vars = [ # i.e., to be dumbified
@@ -102,12 +102,12 @@ model_vars = [
     "reshist_addr1_popdensity",  # MS
     "nsc_p_ss_mean_3_items",  # MS
     "reshist_addr1_pm25",
-    "F1",  # MS
-    "F2",  # MS
-    "F3",  # MS
-    "F4",  # MS
-    "F5", # MS
-    "F6" # MS
+    "Crustal",  # MS
+    "Ammonium_Sulphates",  # MS
+    "Biomass_burning",  # MS
+    "Traffic",  # MS
+    "Ammonium_Nitrates", # MS
+    "Industrial" # MS
 ]
 
 na_indicators = model_vars + [item for sublist in all_dumbs.values() for item in sublist if 'nan' in item]

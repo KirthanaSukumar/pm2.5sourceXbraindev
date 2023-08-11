@@ -415,5 +415,5 @@ data_dict.at['F6',
 
 data_dict.to_csv(join(OUT_DIR, 'data_dictionary.csv'))
 big_df = pd.concat([df, pm_factors, noise], axis=1)
-big_df.to_csv(join(OUT_DIR, 'data.csv')
+big_df.to_pickle(join(OUT_DIR, 'data.pkl')
 )

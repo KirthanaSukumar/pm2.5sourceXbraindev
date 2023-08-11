@@ -37,7 +37,7 @@ figs_dir <- "figures"
 outp_dir <- "output"
 df <- read.csv(paste(proj_dir,
                      data_dir,
-                     "data_qcd3.csv",
+                     "data_qcd4.csv",
                      sep = "/",
                      collapse = NULL),
                header = TRUE,
