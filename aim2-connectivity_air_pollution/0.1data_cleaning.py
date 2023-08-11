@@ -13,7 +13,7 @@ DATA_DIR = "data/"
 FIGS_DIR = "figures/"
 OUTP_DIR = "output/"
 
-df = pd.read_csv(join(PROJ_DIR, DATA_DIR, "data2.csv"), index_col=0, header=0)
+df = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data.pkl"))
 all_subj = df.index
 
 df['interview_date'] = pd.to_datetime(df['interview_date'])
@@ -44,11 +44,11 @@ model_vars = [
     "reshist_addr1_urban_area",
     "nsc_p_ss_mean_3_items",
     "reshist_addr1_pm25",
-    "F1",
-    "F2",
-    "F3",
-    "F4",
-    "F5",
+    "F1", 
+    "F2", 
+    "F3", 
+    "F4", 
+    "F5", 
     "F6"
     ]
 
@@ -58,8 +58,8 @@ model_vars  = model_vars + mri_vars
 
 # modality-specific filtering via masks
 # t1 quality for freesurfer ROI delineations
-smri_mask1 = df['imgincl_t1w_include'] == 0
-smri_mask2 = df['imgincl_t1w_include2'] == 0
+smri_mask1 = df['imgincl_t1w_include'] == 1
+smri_mask2 = df['imgincl_t1w_include2'] == 1
 smri_mask = smri_mask1 * smri_mask2
 
 # rsfmri quality for FC estimates
@@ -76,14 +76,16 @@ findings2 = df['mrif_score2'].between(1,2, inclusive='both')
 
 findings_mask = findings1 * findings2
 
-
 imaging_mask = smri_mask * rsfmri_mask * findings_mask
+
+qc_fails = np.invert(imaging_mask)
 
 rsfmri_cols = df.filter(regex='rsfmri.*change_score').columns
 
 # mask mri data
-rsfmri_pass_subj = df[rsfmri_cols].mask(imaging_mask).dropna().index
-df[rsfmri_cols].mask(imaging_mask, inplace=True)
+
+rsfmri_pass_subj = qc_fails[qc_fails == False].index
+pass_qc = df[rsfmri_cols].mask(qc_fails)
 rsfmri_quality = df.loc[rsfmri_pass_subj]
 
 
@@ -94,8 +96,8 @@ rsfmri_quality = df.loc[rsfmri_pass_subj]
 
 
 df.replace({999.: np.nan, 777.: np.nan}, inplace=True)
-quality_df = df[df['interview_date2'] < '2020-3-1']
-quality_df.to_csv(join(PROJ_DIR, DATA_DIR, "data_qcd.csv"))
+quality_df = rsfmri_quality[rsfmri_quality['interview_date2'] < '2020-3-1']
+quality_df.to_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd.pkl"))
 
 demographics = ["demo_prnt_marital_v2",
                 "demo_prnt_ed_v2",
