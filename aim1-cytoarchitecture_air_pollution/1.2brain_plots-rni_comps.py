@@ -314,26 +314,26 @@ sns.set(
 cmap = 'seismic'
 threshold = 2
 
-rnd_brain_loadings = pd.read_csv(join(PROJ_DIR, OUTP_DIR, "rnd-brain_P-components.csv"), header=0, index_col=0)
+rni_brain_loadings = pd.read_csv(join(PROJ_DIR, OUTP_DIR, "rni-brain_P-components.csv"), header=0, index_col=0)
 
-rnd_brain_loadings = assign_region_names(rnd_brain_loadings)
+rni_brain_loadings = assign_region_names(rni_brain_loadings)
 
-sig_dims = rnd_brain_loadings.filter(regex="Dimension.*").columns
+sig_dims = rni_brain_loadings.filter(regex="Dimension.*").columns
 #print(sig_dims)
 
 # mask loadings with significance
 for sig_dim in sig_dims:
     
     #print(dim_idx)
-    loadings = rnd_brain_loadings[sig_dim]
+    loadings = rni_brain_loadings[sig_dim]
     #print(loadings.sort_values())
     # when less than 2, mask = True
     # and true values are replaced
     # false values (>2) are retained
-    #mask = abs(rnd_brain_loadings[sig_dim]) < 2.5
+    #mask = abs(rni_brain_loadings[sig_dim]) < 2.5
     #print(sum(mask))
     #masked_loadings = loadings.mask(mask)
-    loadings.name = sig_dim.replace(' ', '_')
+    loadings.name = f"rni_comps-{sig_dim.replace(' ', '_')}"
     nifti = series_2_nifti(loadings, join(PROJ_DIR, OUTP_DIR), save=True)
     plotting.plot_img_on_surf(
             nifti,
@@ -342,8 +342,8 @@ for sig_dim in sig_dims:
             #vmax=vmax,
             symmetric_cbar=True,
             kwargs={'bg_on_data':False, 'alpha': 1, 'avg_method': 'max'},
-            output_file=join(PROJ_DIR, FIGS_DIR, f'rnd-components_{loadings.name}.png')
+            output_file=join(PROJ_DIR, FIGS_DIR, f'rni-components_{loadings.name}.png')
         )
 
-rnd_brain_loadings.to_csv(join(PROJ_DIR, OUTP_DIR, "rnd-brain_P-components-region_names.csv"))
+rni_brain_loadings.to_csv(join(PROJ_DIR, OUTP_DIR, "rni-brain_P-components-region_names.csv"))
 

@@ -56,7 +56,7 @@ model_vars = [
     "F6"
     ]
 
-mri_vars = list(df.filter(regex=".*_rsir.*.change_score", axis=1).columns)
+mri_vars = list(df.filter(regex="dmri_rsir.*.change_score", axis=1).columns)
 
 model_vars  = model_vars + mri_vars
 

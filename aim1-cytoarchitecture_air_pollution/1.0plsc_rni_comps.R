@@ -37,7 +37,7 @@ figs_dir <- "figures"
 outp_dir <- "output"
 df <- read.csv(paste(proj_dir,
                      data_dir,
-                     "data_qcd3.csv",
+                     "data_qcd4.csv",
                      sep = "/",
                      collapse = NULL),
                header = TRUE,
@@ -125,7 +125,7 @@ lm.Group1 <- lm(Group1.Y ~ Group1.X$interview_age +
 Group1_residuals <- data.frame()
 Group1_residuals <- as.data.frame(lm.Group1$residuals)
 
-png(paste(proj_dir, figs_dir, "rni-brain_change_residuals.png", sep = "/"),
+png(paste(proj_dir, figs_dir, "rni-brain_change_residuals-components.png", sep = "/"),
     width = 5, height = 5, res = 600, units = "in")
 plot(fitted(lm.Group1), residuals(lm.Group1))
 dev.off()
@@ -215,7 +215,7 @@ for (i in seq_len(ncol(Group2_residuals))) {
 
 #hist(as.data.frame(Group2_residuals))
 
-png(paste(proj_dir, figs_dir, "rni-air_pollution_residuals.png", sep = "/"),
+png(paste(proj_dir, figs_dir, "rni-air_pollution_residuals-components.png", sep = "/"),
     width = 5, height = 5, res = 600, units = "in")
 plot(fitted(lm.Group2), residuals(lm.Group2))
 dev.off()
@@ -447,7 +447,7 @@ write.csv(scree_df,
 
 print("screeeeeeeeee")
 # obtaining the scree plot
-png(paste(proj_dir, figs_dir, "rni-PLSC_scree.png", sep = "/"),
+png(paste(proj_dir, figs_dir, "rni-PLSC_scree-components.png", sep = "/"),
           width = 5, height = 5, res = 600, units = "in")
 screeeeee <- PlotScree(ev = pls.res$TExPosition.Data$eigs,
                       title = "PLSC- Scree Plot",

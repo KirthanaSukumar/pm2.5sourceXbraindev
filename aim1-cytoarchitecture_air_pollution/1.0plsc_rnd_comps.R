@@ -432,7 +432,7 @@ resPerm4PLSC <- perm4PLSC(data1, # First Data matrix
 )
 print(resPerm4PLSC)
 
-scree_df <- data.frame(row.names = c("f1", "f2", "f3", "f4", "f5", "f6"))
+scree_df <- data.frame(row.names = ap_cols)
 scree_df$eigens <- pls.res$TExPosition.Data$eigs
 scree_df$pEigens <- resPerm4PLSC$pEigenvalues
 
@@ -447,7 +447,7 @@ write.csv(scree_df,
 
 print("screeeeeeeeee")
 # obtaining the scree plot
-png(paste(proj_dir, figs_dir, "rnd-PLSC_scree.png", sep = "/"),
+png(paste(proj_dir, figs_dir, "rnd-PLSC_scree-components.png", sep = "/"),
           width = 5, height = 5, res = 600, units = "in")
 screeeeee <- PlotScree(ev = pls.res$TExPosition.Data$eigs,
                       title = "PLSC- Scree Plot",
