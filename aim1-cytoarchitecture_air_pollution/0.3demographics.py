@@ -214,9 +214,4 @@ for subset in levels.keys():
 
 
 
-table.to_csv(join(PROJ_DIR, ))
-
-
-
-
-
+table.to_csv(join(PROJ_DIR, OUTP_DIR, 'categorical_demographcis.csv'))

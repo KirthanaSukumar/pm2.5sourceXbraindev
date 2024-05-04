@@ -293,6 +293,38 @@ def series_2_nifti(series_in, out_dir, save=False):
     
     return meas_nimg
 
+def jili_sidak_mc(data, alpha):
+    '''
+    Accepts a dataframe (data, samples x features) and a type-i error rate (alpha, float), 
+    then adjusts for the number of effective comparisons between variables
+    in the dataframe based on the eigenvalues of their pairwise correlations.
+    '''
+    import math
+    import numpy as np
+
+    mc_corrmat = data.corr()
+    mc_corrmat.fillna(0, inplace=True)
+    eigvals, eigvecs = np.linalg.eig(mc_corrmat)
+
+    M_eff = 0
+    for eigval in eigvals:
+        if abs(eigval) >= 0:
+            if abs(eigval) >= 1:
+                M_eff += 1
+            else:
+                M_eff += abs(eigval) - math.floor(abs(eigval))
+        else:
+            M_eff += 0
+    print('\nFor {0} vars, number of effective comparisons: {1}\n'.format(mc_corrmat.shape[0], M_eff))
+
+    #and now applying M_eff to the Sidak procedure
+    sidak_p = 1 - (1 - alpha)**(1/M_eff)
+    if sidak_p < 0.00001:
+        print('Critical value of {:.3f}'.format(alpha),'becomes {:2e} after corrections'.format(sidak_p))
+    else:
+        print('Critical value of {:.3f}'.format(alpha),'becomes {:.6f} after corrections'.format(sidak_p))
+    return sidak_p, M_eff
+
 PROJ_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim1"
 DATA_DIR = "data/"
 FIGS_DIR = "figures/"
