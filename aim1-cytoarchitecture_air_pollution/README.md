@@ -9,3 +9,4 @@ Run order & descriptions:
 6. `1.0plsc_rn*_comps.R`: Regresses out confounding variables and performs partial least squares correlation between RNI/RND and PM2.5 components.
 7. `1.2brain_plots*.py`: Creates nifti images and prototype plots with the results from #5-6.
 8. `1.3loadingVis.py`: Creates PM2.5 source and brain loading plots with the results from #5-6.
+9. `2.0response2reviewers.py` includes some code run to address reviewer concerns.
