@@ -1,20 +1,20 @@
-#!/Users/katherine.b/Dropbox/Projects/Environments/idconn_env/bin python3
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
-
+import nibabel as nib
 import seaborn as sns
-
+import bids
 import matplotlib.pyplot as plt
 from os.path import join
 from datetime import datetime
 from time import strftime
 from scipy.stats import spearmanr
-from idconn import nbs
+from idconn import nbs, io
 from bct import threshold_proportional
 
 
 from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.model_selection import RepeatedStratifiedKFold, RepeatedKFold, cross_validate
+from sklearn.model_selection import RepeatedStratifiedKFold, RepeatedKFold, cross_validate, LeaveOneGroupOut
 from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn.metrics import mean_squared_error
 from matplotlib.colors import ListedColormap
@@ -45,7 +45,7 @@ OUTCOMES = [
     "F1",
     ]
 CONFOUNDS = ["sex",
-              #"interview_age",
+              "interview_age",
               "ehi_y_ss_scoreb",
               "site_id_l",
               #"mri_info_manufacturer",
@@ -68,15 +68,10 @@ K = 10
 iter = 10
 atlas_fname = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/deltaABCD_clustering/resources/gordon_networks_222.nii"
 
-nonbrain = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd.pkl")).dropna()
-dat = pd.read_pickle("/Volumes/projects_herting/LABDOCS/Personnel/Katie/deltaABCD_clustering/data/delta_rsFC-rci.pkl")
-nonbrain = nonbrain[CONFOUNDS + OUTCOMES]
-print(nonbrain.columns)
-dat = pd.concat([dat, nonbrain], axis=1).dropna()
-
-#print(len(dat.dropna().index))
-
-rsfmri = dat.filter(regex="rsfmri_c_ngd_.*").dropna()
+dat = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd.pkl")).dropna()
+brain = pd.read_pickle()
+rsfmri = dat.filter(regex="rsfmri_c_.*baseline_year_1_arm_1").dropna()
+print(len(rsfmri.columns))
 keep = rsfmri.index
 dat = dat.loc[keep]
 num_node = 12
@@ -97,45 +92,33 @@ NETWORKS = [
     'vs'
 ]
 
-as_factor = ["demo_comb_income_v2",
-              "race_ethnicity",
-              "reshist_addr1_urban_area"]
-
 rsfmri_df = pd.DataFrame(index=NETWORKS, columns=NETWORKS)
 for network1 in NETWORKS:
     for network2 in NETWORKS:
         var_ = f'rsfmri_c_ngd_{network1}_ngd_{network2}'
         rsfmri_df.at[network1, network2] = var_
 rsfmri_vars = rsfmri_df.values[np.triu_indices(num_node, k=0)]
-print(rsfmri_vars)
-print(dat.filter(like='rsfmri_c_ngd', axis=1).columns)
+
 groups = dat[GROUPS]
 edges = dat[rsfmri_vars]
 upper_tri = np.triu_indices(num_node, k=0)
-
-if CONFOUNDS is not None:
-    confounds = dat[CONFOUNDS]
-else:
-    confounds = None
-# print(dat['bc'])
-for confound in CONFOUNDS:
-    if dat[confound].dtype != float:
-        print(confound)
-        temp = pd.get_dummies(dat[confound], dtype=int, prefix=confound)
-        #print(temp.columns)
-        confounds = pd.concat([confounds.drop(confound, axis=1), temp], axis=1)
-    elif confound in as_factor:
-        print(confound)
-        temp = pd.get_dummies(dat[confound], dtype=int, prefix=confound)
-        temp = temp.drop(temp.filter(like='999', axis=1), axis=1)
-        temp = temp = temp.drop(temp.filter(like='777', axis=1), axis=1)
-        #print(temp.columns)
-        confounds = pd.concat([confounds.drop(confound, axis=1), temp], axis=1)
-
-
 for OUTCOME in OUTCOMES:
-    base_name = f"nbs-predict_outcome-{OUTCOME}"
     outcome = np.reshape(dat[OUTCOME].values, (len(dat[OUTCOME]), 1))
+
+    if CONFOUNDS is not None:
+        confounds = dat[CONFOUNDS]
+        base_name = f"nbs-predict_outcome-{OUTCOME}"
+    else:
+        confounds = None
+        base_name = f"nbs-predict_outcome-{OUTCOME}"
+    # print(dat['bc'])
+    for confound in CONFOUNDS:
+        if dat[confound].dtype != float:
+            #print(confound)
+            temp = pd.get_dummies(dat[confound], dtype=int, prefix=confound)
+            #print(temp.columns)
+            confounds = pd.concat([confounds.drop(confound, axis=1), temp], axis=1)
+    
 
     weighted_average, cv_results = nbs.kfold_nbs(
         edges.values, outcome, confounds, alpha, 
@@ -202,16 +185,16 @@ for OUTCOME in OUTCOMES:
     # mask = io.vectorize_corrmats(filter)
     edges2 = dat[edge_names]
     metrics = ['score', 'mse']
-    n_splits = 10
-    rkfold = RepeatedKFold(n_splits=n_splits, n_repeats=10)
+    n_splits = 100
+    logo = LeaveOneGroupOut()
     model_res = pd.DataFrame(
-        index=range(0,rkfold.get_n_splits(edges2, outcome)),
+        index=range(0,logo.get_n_splits(edges2, outcome, groups=groups)),
         columns=metrics
         )
 
     actual = {}
     predicted = {}
-    for i, (train_index, test_index) in enumerate(rkfold.split(edges2, outcome)):
+    for i, (train_index, test_index) in enumerate(logo.split(edges2, outcome)):
         
         edges_train =  edges2.iloc[train_index]
         outcome_train = outcome[train_index]
@@ -270,4 +253,4 @@ for OUTCOME in OUTCOMES:
     #predicted_df = pd.DataFrame.from_dict(predicted)
     #outcomes = pd.concat([actual_df, predicted_df], axis=1)
     #outcomes.to_csv(join(PROJ_DIR, OUTP_DIR, f"{base_name}_actual-predicted.tsv"), sep='\t')
-    model_res.to_csv(f"{base_name}_model_performance-{today_str}.tsv", sep='\t')
+    model_res.to_csv(f"{base_name}_model_performance.tsv", sep='\t')
