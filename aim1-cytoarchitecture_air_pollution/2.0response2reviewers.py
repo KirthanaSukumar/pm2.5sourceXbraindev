@@ -190,6 +190,8 @@ rni_means.name = 'RNI'
 rnd_means = rnd_desc.T['mean']
 rnd_means.name = 'RND'
 
+pd.concat([rni_means, rnd_means], axis=1).to_csv(join(PROJ_DIR, OUTP_DIR, 'rsi_means.csv'))
+
 rni_desc = assign_region_names(rni_desc.T)
 rni_desc.index = rni_desc['long_region']
 rni_desc.to_csv(join(PROJ_DIR, OUTP_DIR, 'rni_change_descriptives.csv'))
