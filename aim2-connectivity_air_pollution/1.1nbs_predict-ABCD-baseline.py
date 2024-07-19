@@ -31,7 +31,7 @@ PROJ_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim2"
 DATA_DIR = "data"
 OUTP_DIR = "output"
 FIGS_DIR = "figures"
-DERIV_NAME = "IDConn"
+
 OUTCOMES = [
     "F4",
     "F5",

@@ -1,28 +1,24 @@
 #!/Users/katherine.b/Dropbox/Projects/Environments/idconn_env/bin python3
 import pandas as pd
 import numpy as np
-
 import seaborn as sns
-
 import matplotlib.pyplot as plt
 from os.path import join
 from datetime import datetime
 from time import strftime
 from scipy.stats import spearmanr
-from idconn import nbs
+from idconn import nbs, io
 from bct import threshold_proportional
 
 
 from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.model_selection import RepeatedStratifiedKFold, RepeatedKFold, cross_validate
+from sklearn.model_selection import RepeatedStratifiedKFold, RepeatedKFold, cross_validate, LeaveOneGroupOut
 from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn.metrics import mean_squared_error
 from matplotlib.colors import ListedColormap
-import matplotlib as mpl
 
 
 import warnings
-import json
 
 warnings.simplefilter("ignore")
 
@@ -35,7 +31,7 @@ PROJ_DIR = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/SCEHSC_Pilot/aim2"
 DATA_DIR = "data"
 OUTP_DIR = "output"
 FIGS_DIR = "figures"
-DERIV_NAME = "IDConn"
+
 OUTCOMES = [
     "F4",
     "F5",
@@ -44,11 +40,11 @@ OUTCOMES = [
     "F2",
     "F1",
     ]
-CONFOUNDS = ["sex",
-              #"interview_age",
+CONFOUNDS = ["demo_sex_v2_bl",
+              "interview_age",
               "ehi_y_ss_scoreb",
               "site_id_l",
-              #"mri_info_manufacturer",
+              "mri_info_manufacturer",
               "physical_activity1_y",
               "stq_y_ss_weekday",
               "stq_y_ss_weekend",
@@ -56,29 +52,18 @@ CONFOUNDS = ["sex",
               "reshist_addr1_popdensity",
               "reshist_addr1_urban_area",
               "nsc_p_ss_mean_3_items",
-              "demo_comb_income_v2",
-              "race_ethnicity"
+              'race_ethnicity_c_bl',
+              'household_income_4bins_bl',
               ]
 GROUPS = 'site_id_l'
 TASK = "rest"
 ATLAS = "gordon"
 THRESH = 0.5
 alpha = 0.05
-K = 10
-iter = 10
+K = 2
+iter = 2
 atlas_fname = "/Volumes/projects_herting/LABDOCS/Personnel/Katie/deltaABCD_clustering/resources/gordon_networks_222.nii"
 
-nonbrain = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd.pkl")).dropna()
-dat = pd.read_pickle("/Volumes/projects_herting/LABDOCS/Personnel/Katie/deltaABCD_clustering/data/delta_rsFC-rci.pkl")
-nonbrain = nonbrain[CONFOUNDS + OUTCOMES]
-print(nonbrain.columns)
-dat = pd.concat([dat, nonbrain], axis=1).dropna()
-
-#print(len(dat.dropna().index))
-
-rsfmri = dat.filter(regex="rsfmri_c_ngd_.*").dropna()
-keep = rsfmri.index
-dat = dat.loc[keep]
 num_node = 12
 
 NETWORKS = [
@@ -90,28 +75,38 @@ NETWORKS = [
     'fo', 
     #'n', 
     'rspltp', 
-    'sa', 
     'smh', 
     'smm', 
+    'sa',
     'vta', 
     'vs'
 ]
 
-as_factor = ["demo_comb_income_v2",
-              "race_ethnicity",
-              "reshist_addr1_urban_area"]
-
+as_factor = ["household_income_4bins_bl",
+              "race_ethnicity_c_bl",
+              "reshist_addr1_urban_area",
+              "demo_sex_v2_bl",
+              "mri_info_manufacturer",
+              "site_id_l"]
+upper_tri = np.triu_indices(num_node, k=0)
 rsfmri_df = pd.DataFrame(index=NETWORKS, columns=NETWORKS)
 for network1 in NETWORKS:
     for network2 in NETWORKS:
         var_ = f'rsfmri_c_ngd_{network1}_ngd_{network2}'
         rsfmri_df.at[network1, network2] = var_
-rsfmri_vars = rsfmri_df.values[np.triu_indices(num_node, k=0)]
-print(rsfmri_vars)
-print(dat.filter(like='rsfmri_c_ngd', axis=1).columns)
+rsfmri_vars = rsfmri_df.values[upper_tri]
+
+changes = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "delta_rsFC-rci_abs.pkl"))
+nonbrain = pd.read_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd_delta.pkl")).dropna(how='all')
+nonbrain = nonbrain.drop(nonbrain.filter(like='rsfmri_c_ngd', axis=1).columns, axis=1)
+
+ppts = list(set(nonbrain.xs('baseline_year_1_arm_1', level=1, axis=0).index) & set(nonbrain.xs('2_year_follow_up_y_arm_1', level=1, axis=0).index))
+ppts = list(set(ppts) & set(changes.dropna().index))
+
+dat = pd.concat([changes.loc[ppts], nonbrain.xs('baseline_year_1_arm_1', level=1, axis=0).loc[ppts]], axis=1).dropna()
+
 groups = dat[GROUPS]
 edges = dat[rsfmri_vars]
-upper_tri = np.triu_indices(num_node, k=0)
 
 if CONFOUNDS is not None:
     confounds = dat[CONFOUNDS]
@@ -119,16 +114,14 @@ else:
     confounds = None
 # print(dat['bc'])
 for confound in CONFOUNDS:
-    if dat[confound].dtype != float:
-        print(confound)
+    if type(dat.iloc[0][confound]) != np.float64:
+        print(confound, type(dat.iloc[0][confound]))
         temp = pd.get_dummies(dat[confound], dtype=int, prefix=confound)
         #print(temp.columns)
         confounds = pd.concat([confounds.drop(confound, axis=1), temp], axis=1)
     elif confound in as_factor:
         print(confound)
         temp = pd.get_dummies(dat[confound], dtype=int, prefix=confound)
-        temp = temp.drop(temp.filter(like='999', axis=1), axis=1)
-        temp = temp = temp.drop(temp.filter(like='777', axis=1), axis=1)
         #print(temp.columns)
         confounds = pd.concat([confounds.drop(confound, axis=1), temp], axis=1)
 
@@ -152,16 +145,18 @@ for OUTCOME in OUTCOMES:
     fig,ax = plt.subplots()
     sns.heatmap(avg_df, square=True, cmap='seismic', center=0, ax=ax)
     fig.savefig(
-        f"{base_name}_weighted-{today_str}.png",
+        join(PROJ_DIR, FIGS_DIR, f"{base_name}_weighted-delta_{today_str}.png"),
         dpi=400,
         bbox_inches='tight'
         )
     
     cv_results.to_csv(
-        f"{base_name}_models-{today_str}.tsv", sep="\t"
+        join(PROJ_DIR, OUTP_DIR, f"{base_name}_models-delta_{today_str}.tsv"), 
+        sep="\t"
     )
     avg_df.to_csv(
-        f"{base_name}_weighted-{today_str}.tsv", sep="\t"
+        join(PROJ_DIR, OUTP_DIR, f"{base_name}_weighted-delta_{today_str}.tsv"), 
+        sep="\t"
     )
 
     best = cv_results.sort_values(by='score', ascending=False).iloc[0]['model']
@@ -197,21 +192,37 @@ for OUTCOME in OUTCOMES:
     # print(nbs_vector.shape, filter.shape)
     thresh_average = threshold_proportional(weighted_average, THRESH)
     filter = np.where(thresh_average > 0, True, False)
-    #print(rsfmri_df.values[filter])
+    #print(filter)
+
     edge_names = rsfmri_df.values[filter]
-    # mask = io.vectorize_corrmats(filter)
-    edges2 = dat[edge_names]
+    #print(edge_names)
+    # need vectorized lower triangle
+    #print(edge_names.shape, '\n\n', edge_names)
+    edge_names1 = []
+    for edge in edge_names:
+        if edge in rsfmri_vars:
+            edge_names1.append(edge)
+    edges2 = dat[edge_names1]
     metrics = ['score', 'mse']
-    n_splits = 10
-    rkfold = RepeatedKFold(n_splits=n_splits, n_repeats=10)
+    
+    #rkfold = RepeatedKFold(n_splits=n_splits, n_repeats=10)
+    logo = LeaveOneGroupOut()
+    for group in groups.unique():
+        if dat[GROUPS].value_counts()[group] < 5:
+            keep = dat[dat[GROUPS] != group].index
+            keep = list(set(keep) & set(edges2.index))
+            edges2 = edges2.loc[keep]
+    outcome = np.reshape(dat.loc[keep][OUTCOME].values, (len(dat.loc[keep][OUTCOME]), 1))
+    temp_groups = dat.loc[keep][GROUPS]
+    n_splits = logo.get_n_splits(edges2, outcome, groups=temp_groups)
     model_res = pd.DataFrame(
-        index=range(0,rkfold.get_n_splits(edges2, outcome)),
+        index=range(0,n_splits),
         columns=metrics
         )
 
     actual = {}
     predicted = {}
-    for i, (train_index, test_index) in enumerate(rkfold.split(edges2, outcome)):
+    for i, (train_index, test_index) in enumerate(logo.split(edges2, outcome, temp_groups)):
         
         edges_train =  edges2.iloc[train_index]
         outcome_train = outcome[train_index]
@@ -270,4 +281,7 @@ for OUTCOME in OUTCOMES:
     #predicted_df = pd.DataFrame.from_dict(predicted)
     #outcomes = pd.concat([actual_df, predicted_df], axis=1)
     #outcomes.to_csv(join(PROJ_DIR, OUTP_DIR, f"{base_name}_actual-predicted.tsv"), sep='\t')
-    model_res.to_csv(f"{base_name}_model_performance-{today_str}.tsv", sep='\t')
+    model_res.to_csv(
+        join(PROJ_DIR, OUTP_DIR, f"{base_name}_model_performance-delta_{today_str}.tsv"),
+        sep='\t'
+    )
