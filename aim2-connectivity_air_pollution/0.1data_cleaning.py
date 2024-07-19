@@ -161,7 +161,7 @@ base_df = df.loc[complete_base].xs('baseline_year_1_arm_1', level=1)
 base_df.to_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd_base.pkl"))
 
 delta_df = df.loc[good_fmri_delta]
-base_df.to_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd_delta.pkl"))
+delta_df.to_pickle(join(PROJ_DIR, DATA_DIR, "data_qcd_delta.pkl"))
 
 table = pd.DataFrame(
     index=[

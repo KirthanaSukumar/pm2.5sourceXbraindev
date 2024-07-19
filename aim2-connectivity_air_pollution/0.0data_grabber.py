@@ -114,7 +114,6 @@ VARS = [
     "rsfmri_meanmotion",
     "rsfmri_ntpoints",
     "imgincl_rsfmri_include",
-    'mrif_score',
     "mrif_score",
     "mri_info_manufacturer",
     "mri_info_deviceserialnumber",
