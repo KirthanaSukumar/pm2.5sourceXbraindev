@@ -199,14 +199,22 @@ for OUTCOME in OUTCOMES:
     n_splits = 10
     #rkfold = RepeatedKFold(n_splits=n_splits, n_repeats=10)
     logo = LeaveOneGroupOut()
+    for group in groups.unique():
+        if dat[GROUPS].value_counts()[group] < 5:
+            keep = dat[dat[GROUPS] != group].index
+            keep = list(set(keep) & set(edges2.index))
+            edges2 = edges2.loc[keep]
+    outcome = np.reshape(dat.loc[keep][OUTCOME].values, (len(dat.loc[keep][OUTCOME]), 1))
+    temp_groups = dat.loc[keep][GROUPS]
+    n_splits = logo.get_n_splits(edges2, outcome, groups=temp_groups)
     model_res = pd.DataFrame(
-        index=range(0,logo.get_n_splits(edges2, outcome, groups=GROUPS)),
+        index=range(0,n_splits),
         columns=metrics
         )
 
     actual = {}
     predicted = {}
-    for i, (train_index, test_index) in enumerate(logo.split(edges2, outcome)):
+    for i, (train_index, test_index) in enumerate(logo.split(edges2, outcome, temp_groups)):
         
         edges_train =  edges2.iloc[train_index]
         outcome_train = outcome[train_index]
