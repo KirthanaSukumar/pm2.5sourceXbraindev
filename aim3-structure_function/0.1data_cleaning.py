@@ -56,47 +56,57 @@ mri_vars = list(df.filter(regex=".*rsfmri.*.change_score", axis=1).columns)
 
 model_vars  = model_vars + mri_vars
 
+
+
 # modality-specific filtering via masks
 # t1 quality for freesurfer ROI delineations
-smri_mask1 = df['imgincl_t1w_include'] == 0
-smri_mask2 = df['imgincl_t1w_include2'] == 0
+smri_mask1 = df['imgincl_t1w_include'] == 1
+smri_mask2 = df['imgincl_t1w_include2'] == 1
 smri_mask = smri_mask1 * smri_mask2
 
 # dmri quality for RSI estimates
 # 1=include, 0=exclude
 # head motion greater than 2mm FD on average = exclude
-dmri_mask1 = df['imgincl_dmri_include'] == 0
-dmri_mask2 = df['dmri_rsi_meanmotion'] > 2.
-dmri_mask3 = df['imgincl_dmri_include2'] == 0
-dmri_mask4 = df['dmri_rsi_meanmotion2'] > 2.
+dmri_mask1 = df['imgincl_dmri_include'] == 1
+dmri_mask2 = df['dmri_rsi_meanmotion'] < 2.
+dmri_mask3 = df['imgincl_dmri_include2'] == 1
+dmri_mask4 = df['dmri_rsi_meanmotion2'] < 2.
 dmri_mask = dmri_mask1 * dmri_mask2 * dmri_mask3 * dmri_mask4
 
+
+
 # rsfmri quality for FC estimates
-rsfmri_mask1 = df['imgincl_rsfmri_include'] == 0
-rsfmri_mask2 = df['rsfmri_c_ngd_ntpoints'] < 2.
-rsfmri_mask3 = df['imgincl_rsfmri_include2'] == 0
-rsfmri_mask4 = df['rsfmri_c_ngd_ntpoints2'] < 2.
+# specify the "keeps" and then invert the mask before applying
+rsfmri_mask1 = df['imgincl_rsfmri_include'] == 1
+rsfmri_mask2 = df['rsfmri_c_ngd_ntpoints'] >= 750.
+rsfmri_mask3 = df['imgincl_rsfmri_include2'] == 1
+rsfmri_mask4 = df['rsfmri_c_ngd_ntpoints2'] >= 750.
 rsfmri_mask = rsfmri_mask1 * rsfmri_mask2 * rsfmri_mask3 * rsfmri_mask4
 
 # and no incidental findings
-findings1 = df['mrif_score'] >= 1.
-findings2 = df['mrif_score'] <= 2.
-findings3 = df['mrif_score2'] >= 1.
-findings4 = df['mrif_score2'] <= 2.
-findings_mask = findings1 * findings2 * findings3 * findings4
+findings1 = df['mrif_score'].between(1,2, inclusive='both')
+findings2 = df['mrif_score2'].between(1,2, inclusive='both')
 
+findings_mask = findings1 * findings2
 
-rsfmri_mask = smri_mask * rsfmri_mask * findings_mask
-dmri_mask = smri_mask * dmri_mask * findings_mask
+rsfc_mask = smri_mask * rsfmri_mask * findings_mask
+rsi_mask = dmri_mask * smri_mask * findings_mask
+
+rsfc_fails = np.invert(rsfc_mask)
+rsi_fails = np.invert(rsi_mask)
 
 rsfmri_cols = df.filter(regex='rsfmri.*change_score').columns
 dmri_cols = df.filter(regex='dmri.*change_score').columns
 # mask mri data
-df[dmri_cols].mask(dmri_mask, inplace=True)
-df[rsfmri_cols].mask(rsfmri_mask, inplace=True)
-dmri_pass_subj = dmri_mask[dmri_mask == True].index
-rsfmri_pass_subj = rsfmri_mask[rsfmri_mask == True].index
-rsfmri_quality = df.loc[rsfmri_pass_subj]
+df[dmri_cols].mask(rsi_fails, inplace=True)
+df[rsfmri_cols].mask(rsfc_mask, inplace=True)
+
+dmri_pass_subj = rsi_fails[rsi_fails == True].index
+rsfmri_pass_subj = rsfc_fails[rsfc_fails == True].index
+
+quality_ppts = list(set(dmri_pass_subj) & set(rsfmri_pass_subj))
+
+quality = df.loc[quality_ppts]
 
 
 # I want to compare
